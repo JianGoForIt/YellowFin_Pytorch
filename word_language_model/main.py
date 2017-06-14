@@ -4,6 +4,7 @@ import math
 import torch
 import torch.nn as nn
 from torch.autograd import Variable
+import numpy as np
 
 import data
 import model
@@ -41,6 +42,8 @@ parser.add_argument('--log-interval', type=int, default=200, metavar='N',
                     help='report interval')
 parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
+parser.add_argument('--logdir', type=str, default='.',
+                    help='folder for the logs')
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.
@@ -125,6 +128,7 @@ def train():
     start_time = time.time()
     ntokens = len(corpus.dictionary)
     hidden = model.init_hidden(args.batch_size)
+    train_loss_list = []
     for batch, i in enumerate(range(0, train_data.size(0) - 1, args.bptt)):
         data, targets = get_batch(train_data, i)
         # Starting each batch, we detach the hidden state from how it was previously produced.
@@ -141,6 +145,7 @@ def train():
             p.data.add_(-lr, p.grad.data)
 
         total_loss += loss.data
+        train_loss_list.append(loss.data[0] )
 
         if batch % args.log_interval == 0 and batch > 0:
             cur_loss = total_loss[0] / args.log_interval
@@ -151,6 +156,7 @@ def train():
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
+    return train_loss_list
 
 # Loop over epochs.
 lr = args.lr
@@ -158,10 +164,14 @@ best_val_loss = None
 
 # At any point you can hit Ctrl + C to break out of training early.
 try:
+    train_loss_list = []
+    val_loss_list = []
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
-        train()
+        train_loss = train()
+        train_loss_list += train_loss
         val_loss = evaluate(val_data)
+        val_loss_list.append(val_loss)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
                 'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
@@ -175,6 +185,12 @@ try:
         else:
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
             lr /= 4.0
+        with open(args.logdir+"/loss.txt", "w") as f:
+            np.savetxt(f, np.array(train_loss_list) )
+        with open(args.logdir+"/val_loss.txt", "w") as f:
+            np.savetxt(f, np.array(val_loss_list) )
+
+
 except KeyboardInterrupt:
     print('-' * 89)
     print('Exiting from training early')
