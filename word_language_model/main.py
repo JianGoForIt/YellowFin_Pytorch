@@ -154,8 +154,7 @@ def train():
         
         # for group in optimizer._optimizer.param_groups:
         #     print group['lr'], group['momentum']
-        print "loss ", loss
-
+        
         total_loss += loss.data
         train_loss_list.append(loss.data[0] )
 
@@ -178,6 +177,8 @@ best_val_loss = None
 try:
     train_loss_list = []
     val_loss_list = []
+    lr_list = []
+    mu_list = []
     if args.opt_method == "SGD":
         print "using SGD"
         optimizer = torch.optim.SGD(model.parameters(), lr)
@@ -209,12 +210,19 @@ try:
             if args.opt_method == "YF":
                 optimizer.set_lr_factor(optimizer.get_lr_factor() / 4.0)
             else:
-                for group in optimizer._optimizer.param_groups:
+                for group in optimizer.param_groups:
                     group['lr'] /= 4.0
+        if args.opt_method == "YF":
+            mu_list.append(optimizer._mu)
+            lr_list.append(optimizer._lr)
         with open(args.logdir+"/loss.txt", "w") as f:
             np.savetxt(f, np.array(train_loss_list) )
         with open(args.logdir+"/val_loss.txt", "w") as f:
             np.savetxt(f, np.array(val_loss_list) )
+        with open(args.logdir+"/lr.txt", "w") as f:
+            np.savetxt(f, np.array(lr_list) )
+        with open(args.logdir+"/mu.txt", "w") as f:
+            np.savetxt(f, np.array(mu_list) ) 
 
 
 except KeyboardInterrupt:
