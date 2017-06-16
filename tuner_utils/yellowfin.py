@@ -1,10 +1,11 @@
 import math
 # for torch optim sgd
+import numpy as np
 import torch
 
 class YFOptimizer(object):
-  def __init__(self, lr=0.1, mu=0.0, clip_thresh=None, beta=0.999, curv_win_width=20,
-    mu_update_interval=1, zero_debias=True, delta_mu=0.0):
+  def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
+    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -23,5 +24,186 @@ class YFOptimizer(object):
       in YellowFin. It is helpful when you want to do additional hand tuning
       or some decaying scheme to the tuned learning rate in YellowFin. 
       Example on using lr_factor can be found here:
-      https://github.com/JianGoForIt/YellowFin/blob/master/char-rnn-tensorflow/train_YF.py#L140
+      (TODO)
     '''
+    self._lr = lr
+    self._mu = mu
+    self._var_list = var_list
+    self._clip_thresh = clip_thresh
+    self._beta = beta
+    self._curv_win_width = curv_win_width
+    self._zero_debias = zero_debias
+
+    print self._var_list, self._lr
+
+    self._optimizer = torch.optim.SGD(self._var_list, lr=self._lr, momentum=self._mu)
+    self._iter = 0
+    # global states are the statistics
+    self._global_state = {}
+    pass
+
+  def zero_grad(self):
+    self._optimizer.zero_grad()
+
+  def zero_debias_factor(self):
+    return 1.0 - self._beta ** (self._iter + 1)
+
+  def curvature_range(self):
+    global_state = self._global_state
+    if self._iter == 0:
+      global_state["curv_win"] = torch.FloatTensor(self._curv_win_width, 1).zero_()
+    curv_win = global_state["curv_win"]
+    grad_norm_squared = self._global_state["grad_norm_squared"]
+    curv_win[self._iter % self._curv_win_width] = grad_norm_squared
+    valid_end = min(self._curv_win_width, self._iter + 1)
+    beta = self._beta
+    if self._iter == 0:
+      global_state["h_min_avg"] = 0.0
+      global_state["h_max_avg"] = 0.0
+      self._h_min = 0.0
+      self._h_max = 0.0
+
+      print("test", torch.min(curv_win[:valid_end] ) )
+
+    global_state["h_min_avg"] = \
+      global_state["h_min_avg"] * beta + (1 - beta) * torch.min(curv_win[:valid_end] )
+    global_state["h_max_avg"] = \
+      global_state["h_max_avg"] * beta + (1 - beta) * torch.max(curv_win[:valid_end] )
+    if self._zero_debias:
+      debias_factor = self.zero_debias_factor()
+      self._h_min = global_state["h_min_avg"] / debias_factor
+      self._h_max = global_state["h_max_avg"] / debias_factor
+    else:
+      self._h_min = global_state["h_min_avg"]
+      self._h_max = global_state["h_max_avg"]
+
+    print self._h_min, self._h_max
+
+    return
+
+  def grad_variance(self):
+    global_state = self._global_state
+    beta = self._beta
+    self._grad_var = np.array(0.0, dtype=np.float32)
+    for group in self._optimizer.param_groups:
+      for p in group['params']:
+        if p.grad is None:
+          continue
+        grad = p.grad.data
+        state = self._optimizer.state[p]
+
+        if self._iter == 0:
+          state["grad_avg"] = grad.new().resize_as_(grad).zero_()
+          state["grad_avg_squared"] = 0.0
+        state["grad_avg"].mul_(beta).add_(1 - beta, grad)
+        # state["grad_avg_squared"] = torch.dot(state["grad_avg"], state["grad_avg"] )
+        self._grad_var += torch.sum(state["grad_avg"] * state["grad_avg"] )
+        
+        # print state["grad_avg"], torch.sum(state["grad_avg"] * state["grad_avg"] ), torch.dot(state["grad_avg"], state["grad_avg"] )
+
+    if self._zero_debias:
+      debias_factor = self.zero_debias_factor()
+    else:
+      debias_factor = 1.0
+
+    self._grad_var /= -(debias_factor**2)
+    # print "g_avg 2 ", self._grad_var
+    self._grad_var += global_state['grad_norm_squared_avg'] / debias_factor
+    
+    # print "final ", self._grad_var, global_state['grad_norm_squared_avg'] 
+
+    return
+
+  def dist_to_opt(self):
+    global_state = self._global_state
+    beta = self._beta
+    if self._iter == 0:
+      global_state["grad_norm_avg"] = 0.0
+      global_state["dist_to_opt_avg"] = 0.0
+    global_state["grad_norm_avg"] = \
+      global_state["grad_norm_avg"] * beta + (1 - beta) * math.sqrt(global_state["grad_norm_squared"] )
+    global_state["dist_to_opt_avg"] = \
+      global_state["dist_to_opt_avg"] * beta \
+      + (1 - beta) * global_state["grad_norm_avg"] / global_state['grad_norm_squared_avg']
+    if self._zero_debias:
+      debias_factor = self.zero_debias_factor()
+      self._dist_to_opt = global_state["dist_to_opt_avg"] / debias_factor
+    else:
+      self._dist_to_opt = global_state["dist_to_opt_avg"]
+    return
+
+  def after_apply(self):
+    # compute running average of gradient and norm of gradient
+    beta = self._beta
+    global_state = self._global_state
+    if self._iter == 0:
+      global_state["grad_norm_squared_avg"] = 0.0
+
+    # global_state["grad_norm_squared"] = torch.FloatTensor(1).zero_()
+    global_state["grad_norm_squared"] = 0.0
+    for group in self._optimizer.param_groups:
+      for p in group['params']:
+        if p.grad is None:
+          continue
+        grad = p.grad.data
+        global_state['grad_norm_squared'] += torch.dot(grad, grad)
+        
+    global_state['grad_norm_squared_avg'] = \
+      global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
+    # global_state['grad_norm_squared_avg'].mul_(beta).add_(1 - beta, global_state['grad_norm_squared'] )
+        
+    self.curvature_range()
+    self.grad_variance()
+    self.dist_to_opt()
+    if self._iter > 0:
+      self.get_mu()    
+      self.get_lr()
+    return
+
+
+  def get_lr(self):
+    lr = (1.0 - math.sqrt(self._mu) )**2 / self._h_min
+    return
+
+  def get_mu(self):
+    coef = [-1.0, 3.0, 0.0, 1.0]
+    coef[2] = -(3 + self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var)
+    # TODO double check the data type
+    roots = np.roots(coef)
+    root = roots[np.logical_and(np.logical_and(np.real(roots) > 0.0, 
+      np.real(roots) < 1.0), np.imag(roots) < 1e-5) ]
+    # TODO double check the root value
+    dr = self._h_max / self._h_min
+    self._mu = max(np.real(root)[0]**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
+    return 
+
+  def update_hyper_param(self):
+    for group in self._optimizer.param_groups:
+      group['momentum'] = self._mu
+      group['lr'] = self._lr
+    return
+
+
+  def step(self):
+    # add weight decay
+    for group in self._optimizer.param_groups:
+      for p in group['params']:
+        if p.grad is None:
+            continue
+        grad = p.grad.data
+
+        if group['weight_decay'] != 0:
+            grad = grad.add(group['weight_decay'], p.data)
+    
+    # apply update
+    self._optimizer.step()
+
+    # after appply
+    self.after_apply()
+
+    # update learning rate and momentum
+    self.update_hyper_param()
+
+    self._iter += 1
+    return 
+
