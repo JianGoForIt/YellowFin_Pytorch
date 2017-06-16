@@ -9,6 +9,10 @@ import numpy as np
 import data
 import model
 
+import sys
+sys.path.append("../tuner_utils")
+from yellowfin import YFOptimizer
+
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='./data/penn',
                     help='location of the data corpus')
@@ -38,7 +42,7 @@ parser.add_argument('--seed', type=int, default=1111,
                     help='random seed')
 parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
-parser.add_argument('--log-interval', type=int, default=200, metavar='N',
+parser.add_argument('--log-interval', type=int, default=250, metavar='N',
                     help='report interval')
 parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
@@ -143,8 +147,14 @@ def train():
 
         # `clip_grad_norm` helps prevent the exploding gradient problem in RNNs / LSTMs.
         torch.nn.utils.clip_grad_norm(model.parameters(), args.clip)
-        for p in model.parameters():
-            p.data.add_(-lr, p.grad.data)
+
+        optimizer.step()
+        # for p in model.parameters():
+        #     p.data.add_(-lr, p.grad.data)
+        
+        # for group in optimizer._optimizer.param_groups:
+        #     print group['lr'], group['momentum']
+        print "loss ", loss
 
         total_loss += loss.data
         train_loss_list.append(loss.data[0] )
@@ -168,6 +178,15 @@ best_val_loss = None
 try:
     train_loss_list = []
     val_loss_list = []
+    if args.opt_method == "SGD":
+        print "using SGD"
+        optimizer = torch.optim.SGD(model.parameters(), lr)
+    elif args.opt_method == "YF":
+        print "using YF"
+        optimizer = YFOptimizer(model.parameters(), lr=1.0, mu=0.0)
+    elif args.opt_method == "Adam":
+        print "using Adam"
+        optimizer = torch.optim.Adam(model.parameters(), lr)
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
         train_loss = train()
@@ -187,6 +206,11 @@ try:
         else:
             # Anneal the learning rate if no improvement has been seen in the validation dataset.
             lr /= 4.0
+            if args.opt_method == "YF":
+                optimizer.set_lr_factor(optimizer.get_lr_factor() / 4.0)
+            else:
+                for group in optimizer._optimizer.param_groups:
+                    group['lr'] /= 4.0
         with open(args.logdir+"/loss.txt", "w") as f:
             np.savetxt(f, np.array(train_loss_list) )
         with open(args.logdir+"/val_loss.txt", "w") as f:

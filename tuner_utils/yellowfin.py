@@ -17,7 +17,7 @@ class YFOptimizer(object):
       clip_thresh: python scalar. The cliping threshold for tf.clip_by_global_norm.
         if None, no clipping will be carried out. 
       beta: python scalar. The smoothing parameter for estimations.
-      delta_mu: for extensions. Not necessary in the basic use.
+      delta_mu: for extensions. Not necessary in the basic use. (TODO)
     Other features:
       If you want to manually control the learning rates, self.lr_factor is
       an interface to the outside, it is an multiplier for the internal learning rate
@@ -43,8 +43,13 @@ class YFOptimizer(object):
     pass
 
 
-  def set_lr_factor(factor):
+  def set_lr_factor(self, factor):
     self._lr_factor = factor
+    return
+
+
+  def get_lr_factor(self):
+    return self._lr_factor
 
 
   def zero_grad(self):
