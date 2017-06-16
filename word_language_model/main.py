@@ -44,6 +44,8 @@ parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
 parser.add_argument('--logdir', type=str, default='.',
                     help='folder for the logs')
+parser.add_argument('--opt_method', type=str, default='YF',
+                    help='select the optimizer you are using')
 args = parser.parse_args()
 
 # Set the random seed manually for reproducibility.

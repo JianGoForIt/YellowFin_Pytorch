@@ -37,7 +37,14 @@ class YFOptimizer(object):
     self._iter = 0
     # global states are the statistics
     self._global_state = {}
+
+    # for decaying learning rate and etc.
+    self._lr_factor = 1.0
     pass
+
+
+  def set_lr_factor(factor):
+    self._lr_factor = factor
 
 
   def zero_grad(self):
@@ -172,7 +179,7 @@ class YFOptimizer(object):
   def update_hyper_param(self):
     for group in self._optimizer.param_groups:
       group['momentum'] = self._mu
-      group['lr'] = self._lr
+      group['lr'] = self._lr * self._lr_factor
     return
 
 
@@ -187,6 +194,9 @@ class YFOptimizer(object):
         if group['weight_decay'] != 0:
             grad = grad.add(group['weight_decay'], p.data)
     
+    if self._clip_thresh != None:
+      torch.nn.utils.clip_grad_norm(self._var_list, self._clip_thresh)
+
     # apply update
     self._optimizer.step()
 
