@@ -9,7 +9,7 @@ import numpy as np
 import data
 import model
 
-import sys
+import sys, os
 sys.path.append("../tuner_utils")
 from yellowfin import YFOptimizer
 
@@ -175,6 +175,9 @@ best_val_loss = None
 
 # At any point you can hit Ctrl + C to break out of training early.
 try:
+    if not os.path.isdir(args.logdir):
+        os.mkdir(args.logdir)
+
     train_loss_list = []
     val_loss_list = []
     lr_list = []
@@ -201,7 +204,7 @@ try:
         print('-' * 89)
         # Save the model if the validation loss is the best we've seen so far.
         if not best_val_loss or val_loss < best_val_loss:
-            with open(args.save, 'wb') as f:
+            with open(args.logdir + "/" + args.save, 'wb') as f:
                 torch.save(model, f)
             best_val_loss = val_loss
         else:
