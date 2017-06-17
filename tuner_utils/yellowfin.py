@@ -147,7 +147,8 @@ class YFOptimizer(object):
         if p.grad is None:
           continue
         grad = p.grad.data
-        global_state['grad_norm_squared'] += torch.dot(grad, grad)
+        # global_state['grad_norm_squared'] += torch.dot(grad, grad)
+        global_state['grad_norm_squared'] += torch.sum(grad * grad)
         
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
