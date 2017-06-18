@@ -124,9 +124,9 @@ def train(epoch):
         if args.opt_method == "YF":
             lr_list.append(optimizer._optimizer.param_groups[0]['lr'] )
             mu_list.append(optimizer._optimizer.param_groups[0]['momentum'] )
-        else:
-            lr_list.append(optimizer.param_groups[0]['lr'] )
-            mu_list.append(optimizer.param_groups[0]['momentum'] )
+        # else:
+        #     lr_list.append(optimizer.param_groups[0]['lr'] )
+        #     mu_list.append(optimizer.param_groups[0]['momentum'] )
 
     return loss_list, lr_list, mu_list
 
