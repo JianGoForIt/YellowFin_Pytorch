@@ -17,14 +17,17 @@ from models import *
 from utils import progress_bar
 from torch.autograd import Variable
 
+import numpy as np
 import sys
-# sys.path.append("")
+sys.path.append("../tuner_utils")
+from yellowfin import YFOptimizer
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--logdir', type=str, default="./")
+parser.add_argument('--opt_method', type=str, default="YF")
 args = parser.parse_args()
 
 use_cuda = torch.cuda.is_available()
@@ -78,8 +81,17 @@ if use_cuda:
     cudnn.benchmark = True
 
 criterion = nn.CrossEntropyLoss()
-optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-
+if args.opt_method == "SGD":
+    print("using SGD")
+    optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
+if args.opt_method == "Adam":
+    print("using Adam")
+    optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
+elif args.opt_method == "YF":
+    print("using YF")
+    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=0.0, weight_decay=5e-4)
+else:
+    raise Exception("Optimizer not supported")
 # Training
 def train(epoch):
     print('\nEpoch: %d' % epoch)
@@ -88,6 +100,8 @@ def train(epoch):
     correct = 0
     total = 0
     loss_list = []
+    lr_list = []
+    mu_list = []
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
@@ -106,7 +120,15 @@ def train(epoch):
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
-    return loss_list
+
+        if args.opt_method == "YF":
+            lr_list.append(optimizer._optimizer.param_groups[0]['lr'] )
+            mu_list.append(optimizer._optimizer.param_groups[0]['momentum'] )
+        else:
+            lr_list.append(optimizer.param_groups[0]['lr'] )
+            mu_list.append(optimizer.param_groups[0]['momentum'] )
+
+    return loss_list, lr_list, mu_list
 
 def test(epoch):
     global best_acc
@@ -138,25 +160,39 @@ def test(epoch):
             'acc': acc,
             'epoch': epoch,
         }
-        if not os.path.isdir('checkpoint'):
-            os.mkdir('checkpoint')
-        torch.save(state, './checkpoint/ckpt.t7')
+        # if not os.path.isdir('checkpoint'):
+        #     os.mkdir('checkpoint')
+        # torch.save(state, './checkpoint/ckpt.t7')
         best_acc = acc
     return acc
 
+
+if not os.path.isdir(args.logdir):
+    os.mkdir(args.logdir)
 train_loss_list = []
 test_acc_list = []
-for epoch in range(start_epoch, start_epoch+200):
-    loss_list = train(epoch)
+lr_list = []
+mu_list = []
+for epoch in range(start_epoch, start_epoch+150):
+    loss_list, lr_epoch, mu_epoch = train(epoch)
     train_loss_list += loss_list
     test_acc = test(epoch)
     test_acc_list.append(test_acc)
+
+    lr_list += lr_epoch
+    mu_list += mu_epoch
 
     with open(args.logdir + "/loss.txt", "w") as f:
         np.savetxt(f, np.array(train_loss_list) )
 
     with open(args.logdir + "/test_acc.txt", "w") as f:
         np.savetxt(f, np.array(test_acc_list) )
+
+    with open(args.logdir + "/lr.txt", "w") as f:
+        np.savetxt(f, np.array(lr_list) )
+
+    with open(args.logdir + "/mu.txt", "w") as f:
+        np.savetxt(f, np.array(mu_list) ) 
 
 
 

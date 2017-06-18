@@ -33,7 +33,8 @@ class YFOptimizer(object):
     self._beta = beta
     self._curv_win_width = curv_win_width
     self._zero_debias = zero_debias
-    self._optimizer = torch.optim.SGD(self._var_list, lr=self._lr, momentum=self._mu)
+    self._optimizer = torch.optim.SGD(self._var_list, lr=self._lr, 
+      momentum=self._mu, weight_decay=weight_decay)
     self._iter = 0
     # global states are the statistics
     self._global_state = {}
