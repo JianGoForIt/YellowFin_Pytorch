@@ -151,6 +151,7 @@ def test(epoch):
         progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
+
     # Save checkpoint.
     acc = 100.*correct/total
     if acc > best_acc:
