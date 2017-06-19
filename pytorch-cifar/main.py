@@ -85,7 +85,7 @@ criterion = nn.CrossEntropyLoss()
 if args.opt_method == "SGD":
     print("using SGD")
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
-if args.opt_method == "Adam":
+elif args.opt_method == "Adam":
     print("using Adam")
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 elif args.opt_method == "YF":
