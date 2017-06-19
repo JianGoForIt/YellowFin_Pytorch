@@ -13,14 +13,14 @@ Please clone the master branch and follow the instructions to run YellowFin on [
 
 Note YellowFin is tested with PyTorch v0.1.12 for compatibility. It is tested under Python 2.7.
 
-### run CIFAR10 ResNext experiments
+### Run CIFAR10 ResNext experiments
 The experiments on 110 layer ResNet with CIFAR10 and 164 layer ResNet with CIFAR100 can be launched using
 ```
 cd pytorch-cifar
 python main.py --lr=1.0 --mu=0.0 --logdir=path_to_logs --opt_method=YF
 ```
 
-### run Penn Treebank tied LSTM experiments
+### Run Penn Treebank tied LSTM experiments
 The experiments on multiple-layer LSTM on Penn Treebank can be launched using
 ```
 cd word_language_model
@@ -33,6 +33,14 @@ a. YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and mome
 b. If you want to clip gradient, you can also consider using the ```clip_thresh``` argument when initializing the YFOptimizer.
 
 c. If you want to use the typical lr-dropping technique after a ceritain number of epochs, or you want to more finely control the learning rate, please use ```set_lr_factor()``` in the YFOptimizer class. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
+
+## Additional experiments to test the repo
+We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L91) and [Tied LSTM on PTB](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/word_language_model/main.py#L191) to test the PyTorch implementation here. For more on experimental results, please refer to our [paper](https://arxiv.org/abs/1706.03471).
+
+![ResNext](plots/resnext_test_acc.png)
+
+![Tied LSTM](plots/tied_ptb_test_perp.png)
+
 
 ## Tensorflow implementation
 [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin)
