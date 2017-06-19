@@ -32,7 +32,7 @@ a. YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and mome
 
 b. If you want to clip gradient, you can also consider using the ```clip_thresh``` argument when initializing the YFOptimizer.
 
-c. If you want to use the typical lr-dropping technique after a ceritain number of epochs, or you want to more finely control the learning rate, please use self.set_lr_factor(). More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
+c. If you want to use the typical lr-dropping technique after a ceritain number of epochs, or you want to more finely control the learning rate, please use ```set_lr_factor()``` in the YFOptimizer class. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
 
 ## Tensorflow implementation
 [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin)
