@@ -6,19 +6,12 @@ The implmentation here can be **a drop-in replacement for any optimizer in PyTor
 
 For more technical details, please refer to our paper [YellowFin and the Art of Momentum Tuning](https://arxiv.org/abs/1706.03471).
 
-For more usage details, please refer to the inline documentation of ```tuner_utils/yellowfin.py```. Example usage can be found here for [CIFAR](https://github.com/JianGoForIt/YellowFin/blob/master/cifar/model/resnet_model.py#L160) and [PTB](https://github.com/JianGoForIt/YellowFin/blob/master/ptb/model/ptb_word_lm.py#L203).
+For more usage details, please refer to the inline documentation of ```tuner_utils/yellowfin.py```. Example usage can be found here for [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L91) and [Tied LSTM on PTB](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/word_language_model/main.py#L191).
 
 ## Setup instructions for experiments
-Please clone the master branch and follow the instructions to run YellowFin on ResNet for CIFAR10, Bottleneck Resnet on CIRAR100 for image recognition, LSTM on Penn Treebank for language modeling, Char Rnn LSTM on TinyShakespeare and LSTM on Wall Street Journal dataset for constituency parsing. The CIFAR and PTB models we use are slightly adapted from official Tensorflow [ResNet](https://github.com/tensorflow/models/tree/master/resnet) and [LSTM](https://github.com/tensorflow/models/tree/master/tutorials/rnn/ptb). The Char Rnn LSTM and the Parsing LSTM are adapted from [Char Rnn repo](https://github.com/sherjilozair/char-rnn-tensorflow) and [Parsing LSTM repo](https://github.com/cdg720/emnlp2016) respectively. Thanks to the researchers for developing the models.
+Please clone the master branch and follow the instructions to run YellowFin on ResNext for CIFAR10, Tied LSTM on Penn Treebank for language modeling. The models are adapted from [ResNext repo](https://github.com/kuangliu/pytorch-cifar) and [PyTorch example tied LSTM repo](https://github.com/pytorch/examples/tree/master/word_language_model) respectively. Thanks to the researchers for developing the models. For more experiments on convolutional and recurrent neural networks, please refer to our [tensorflow implementation](https://github.com/JianGoForIt/YellowFin) of YellowFin.
 
 Note YellowFin is tested with PyTorch v0.1.12 for compatibility. It is tested under Python 2.7.
-
-### download data
-Please use the data/download.sh script to download CIFAR10/100 and Penn Treebank dataset. It may take a few minutes depending on the network condition. Other datasets are self-included in the repo.
-```
-cd data
-bash download.sh
-```
 
 ### run CIFAR10/100 ResNets experiments
 The experiments on 110 layer ResNet with CIFAR10 and 164 layer ResNet with CIFAR100 can be launched using
@@ -34,22 +27,6 @@ The experiments on multiple-layer LSTM on Penn Treebank can be launched using
 cd ptb/scripts
 python PTB-release.py
 ```
-
-### run Char Rnn LSTM experiments
-The experiments on Char Rnn LSTM with TinyShakespeare dataset can be launched using
-```
-cd char-rnn-tensorflow
-python train_YF.py --log_dir=path_to_log --data_dir=./data/tinyshakespeare/
-```
-
-### run constituency parsing LSTM experiments
-The experiments on constituency parsing with the Wall Street Journal (WSJ) dataset can be launched using
-```
-cd parsing
-mkdir -p models/wsj && python train.py --data_path=wsj --model_path=models/wsj/model --log_dir=path_to_log --opt_method="YF"
-```
-Note the WSJ is not public available. Please contact us or the author of [Parsing LSTM repo](https://github.com/cdg720/emnlp2016) for the access of the data. The data can be preprocessed following the instructions in [Parsing LSTM repo](https://github.com/cdg720/emnlp2016). Based on the preprocessed data, you can run our scripts.
-
 
 ### Tensorflow implementation
 [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin)
