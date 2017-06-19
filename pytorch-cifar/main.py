@@ -103,6 +103,14 @@ def train(epoch):
     loss_list = []
     lr_list = []
     mu_list = []
+
+    if epoch > 150:
+        if args.opt_method == "YF":
+            optimizer.set_lr_factor(optimizer.get_lr_factor() / 10.0)
+        else:
+            for group in optimizer.param_groups:
+                    group['lr'] /= 10.0
+
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
@@ -175,7 +183,7 @@ train_loss_list = []
 test_acc_list = []
 lr_list = []
 mu_list = []
-for epoch in range(start_epoch, start_epoch+150):
+for epoch in range(start_epoch, start_epoch+200):
     loss_list, lr_epoch, mu_epoch = train(epoch)
     train_loss_list += loss_list
     test_acc = test(epoch)
