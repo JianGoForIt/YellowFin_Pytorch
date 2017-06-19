@@ -104,7 +104,7 @@ def train(epoch):
     lr_list = []
     mu_list = []
 
-    if epoch > 150:
+    if epoch == 151:
         if args.opt_method == "YF":
             optimizer.set_lr_factor(optimizer.get_lr_factor() / 10.0)
         else:
