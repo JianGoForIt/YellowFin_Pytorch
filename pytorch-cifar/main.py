@@ -25,6 +25,7 @@ from yellowfin import YFOptimizer
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--mu', default=0.0, type=float, help='momentum')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--logdir', type=str, default="./")
 parser.add_argument('--opt_method', type=str, default="YF")
@@ -89,7 +90,7 @@ if args.opt_method == "Adam":
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 elif args.opt_method == "YF":
     print("using YF")
-    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=0.0, weight_decay=5e-4)
+    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4)
 else:
     raise Exception("Optimizer not supported")
 # Training

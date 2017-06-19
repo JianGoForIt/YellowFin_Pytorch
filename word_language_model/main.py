@@ -184,10 +184,16 @@ try:
     mu_list = []
     if args.opt_method == "SGD":
         print "using SGD"
-        optimizer = torch.optim.SGD(model.parameters(), lr)
+        optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.0)
+    elif args.opt_method == "momSGD":
+	print "using mom SGD"
+        optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.9)
     elif args.opt_method == "YF":
         print "using YF"
         optimizer = YFOptimizer(model.parameters(), lr=1.0, mu=0.0)
+    elif args.opt_method == "Adagrad":
+        print "using Adagrad"
+        optimizer = torch.optim.Adagrad(model.parameters(), lr)
     elif args.opt_method == "Adam":
         print "using Adam"
         optimizer = torch.optim.Adam(model.parameters(), lr)
@@ -233,8 +239,8 @@ except KeyboardInterrupt:
     print('Exiting from training early')
 
 # Load the best saved model.
-with open(args.save, 'rb') as f:
-    model = torch.load(f)
+#with open(args.save, 'rb') as f:
+#    model = torch.load(f)
 
 # Run on test data.
 test_loss = evaluate(test_data)
