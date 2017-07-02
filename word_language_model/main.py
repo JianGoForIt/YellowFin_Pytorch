@@ -9,7 +9,8 @@ import numpy as np
 import data
 import model
 
-import sys, os
+import sys
+import os
 sys.path.append("../tuner_utils")
 from yellowfin import YFOptimizer
 
@@ -151,10 +152,10 @@ def train():
         optimizer.step()
         # for p in model.parameters():
         #     p.data.add_(-lr, p.grad.data)
-        
+
         # for group in optimizer._optimizer.param_groups:
         #     print group['lr'], group['momentum']
-        
+
         total_loss += loss.data
         train_loss_list.append(loss.data[0] )
 
@@ -183,19 +184,19 @@ try:
     lr_list = []
     mu_list = []
     if args.opt_method == "SGD":
-        print "using SGD"
+        print("using SGD")
         optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.0)
     elif args.opt_method == "momSGD":
-	print "using mom SGD"
+        print("using mom SGD")
         optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.9)
     elif args.opt_method == "YF":
-        print "using YF"
+        print("using YF")
         optimizer = YFOptimizer(model.parameters(), lr=1.0, mu=0.0)
     elif args.opt_method == "Adagrad":
-        print "using Adagrad"
+        print("using Adagrad")
         optimizer = torch.optim.Adagrad(model.parameters(), lr)
     elif args.opt_method == "Adam":
-        print "using Adam"
+        print("using Adam")
         optimizer = torch.optim.Adam(model.parameters(), lr)
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
@@ -205,8 +206,9 @@ try:
         val_loss_list.append(val_loss)
         print('-' * 89)
         print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
-                'valid ppl {:8.2f}'.format(epoch, (time.time() - epoch_start_time),
-                                           val_loss, math.exp(val_loss)))
+              'valid ppl {:8.2f}'.format(epoch,
+                                         (time.time() - epoch_start_time),
+                                         val_loss, math.exp(val_loss)))
         print('-' * 89)
         # Save the model if the validation loss is the best we've seen so far.
         if not best_val_loss or val_loss < best_val_loss:
@@ -224,14 +226,14 @@ try:
         if args.opt_method == "YF":
             mu_list.append(optimizer._mu)
             lr_list.append(optimizer._lr)
-        with open(args.logdir+"/loss.txt", "w") as f:
+        with open(args.logdir+"/loss.txt", "wb") as f:
             np.savetxt(f, np.array(train_loss_list) )
-        with open(args.logdir+"/val_loss.txt", "w") as f:
+        with open(args.logdir+"/val_loss.txt", "wb") as f:
             np.savetxt(f, np.array(val_loss_list) )
-        with open(args.logdir+"/lr.txt", "w") as f:
+        with open(args.logdir+"/lr.txt", "wb") as f:
             np.savetxt(f, np.array(lr_list) )
-        with open(args.logdir+"/mu.txt", "w") as f:
-            np.savetxt(f, np.array(mu_list) ) 
+        with open(args.logdir+"/mu.txt", "wb") as f:
+            np.savetxt(f, np.array(mu_list) )
 
 
 except KeyboardInterrupt:
@@ -239,7 +241,7 @@ except KeyboardInterrupt:
     print('Exiting from training early')
 
 # Load the best saved model.
-#with open(args.save, 'rb') as f:
+# with open(args.save, 'rb') as f:
 #    model = torch.load(f)
 
 # Run on test data.

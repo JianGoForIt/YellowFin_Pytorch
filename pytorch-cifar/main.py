@@ -192,17 +192,17 @@ for epoch in range(start_epoch, start_epoch+200):
     lr_list += lr_epoch
     mu_list += mu_epoch
 
-    with open(args.logdir + "/loss.txt", "w") as f:
+    with open(args.logdir + "/loss.txt", "wb") as f:
         np.savetxt(f, np.array(train_loss_list) )
 
-    with open(args.logdir + "/test_acc.txt", "w") as f:
+    with open(args.logdir + "/test_acc.txt", "wb") as f:
         np.savetxt(f, np.array(test_acc_list) )
 
-    with open(args.logdir + "/lr.txt", "w") as f:
+    with open(args.logdir + "/lr.txt", "wb") as f:
         np.savetxt(f, np.array(lr_list) )
 
-    with open(args.logdir + "/mu.txt", "w") as f:
-        np.savetxt(f, np.array(mu_list) ) 
+    with open(args.logdir + "/mu.txt", "wb") as f:
+        np.savetxt(f, np.array(mu_list) )
 
 
 
