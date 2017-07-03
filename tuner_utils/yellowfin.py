@@ -28,7 +28,9 @@ class YFOptimizer(object):
     '''
     self._lr = lr
     self._mu = mu
-    self._var_list = var_list
+    # we convert var_list from generator to list so that
+    # it can be used for multiple times
+    self._var_list = list(var_list)
     self._clip_thresh = clip_thresh
     self._beta = beta
     self._curv_win_width = curv_win_width
