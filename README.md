@@ -47,6 +47,7 @@ We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch
 
 ## Tensorflow implementation
 [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin)
+
 [YellowFin Theano Repo](https://gist.github.com/botev/f8b32c00eafee222e47393f7f0747666) 
 
 We thank the contributors for YellowFin in different deep learning frameworks.
