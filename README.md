@@ -45,9 +45,9 @@ We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch
 ![Tied LSTM](plots/tied_ptb_test_perp.png)
 
 
-## Tensorflow implementation
-[YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin)
+## Implementation for other platforms
+For Tensorflow users, we implemented [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin)
 
-[YellowFin Theano Repo](https://gist.github.com/botev/f8b32c00eafee222e47393f7f0747666) 
+For Theano users, Github user [botev](https://github.com/botev) has already implemented a Theano version here: [YellowFin Theano Repo](https://gist.github.com/botev/f8b32c00eafee222e47393f7f0747666) 
 
 We thank the contributors for YellowFin in different deep learning frameworks.
