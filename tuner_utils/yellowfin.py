@@ -46,6 +46,33 @@ class YFOptimizer(object):
     pass
 
 
+  def state_dict(self):
+    sgd_state_dict = self._optimizer.state_dict()
+    global_state = self._global_state
+    lr_factor = self._lr_factor
+    iter = self._iter
+    lr = self._lr
+    mu = self._mu
+
+    return {
+      "sgd_state_dict": sgd_state_dict,
+      "global_state": global_state,
+      "lr_factor": lr_factor,
+      "iter": iter,
+      "lr": lr,
+      "mu": mu,
+    }
+
+
+  def load_state_dict(self, state_dict):
+    self._optimizer.load_state_dict(state_dict['sgd_state_dict'])
+    self._global_state = state_dict['global_state']
+    self._lr_factor = state_dict['lr_factor']
+    self._iter = state_dict['iter']
+    self._lr = state_dict['lr']
+    self._mu = state_dict['mu']
+
+
   def set_lr_factor(self, factor):
     self._lr_factor = factor
     return
