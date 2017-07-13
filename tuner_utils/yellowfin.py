@@ -14,9 +14,10 @@ class YFOptimizer(object):
     Args:
       lr: python scalar. The initial value of learning rate, we use 1.0 in our paper.
       mu: python scalar. The initial value of momentum, we use 0.0 in our paper.
-      clip_thresh: python scalar. The cliping threshold for tf.clip_by_global_norm.
+      clip_thresh: python scalar. The manaully-set clipping threshold for tf.clip_by_global_norm.
         if None, the automatic clipping will be carried out. The automatic clipping 
-        feature is parameterized by argument auto_clip_fac. 
+        feature is parameterized by argument auto_clip_fac. The auto clip feature
+        can be switched off with auto_clip_fac = None
       beta: python scalar. The smoothing parameter for estimations.
       delta_mu: for extensions. Not necessary in the basic use. (TODO)
     Other features:
@@ -214,7 +215,7 @@ class YFOptimizer(object):
     
     if self._clip_thresh != None:
       torch.nn.utils.clip_grad_norm(self._var_list, self._clip_thresh)
-    elif self._iter != 0:
+    elif (self._iter != 0 and self._auto_clip_fac != None):
       # do not clip the first iteration
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
 
