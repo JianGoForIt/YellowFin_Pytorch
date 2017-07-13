@@ -53,6 +53,10 @@ class YFOptimizer(object):
     iter = self._iter
     lr = self._lr
     mu = self._mu
+    clip_thresh = self._clip_thresh
+    beta = self._beta
+    curv_win_width = self._curv_win_width
+    zero_debias = self._zero_debias
 
     return {
       "sgd_state_dict": sgd_state_dict,
@@ -61,6 +65,10 @@ class YFOptimizer(object):
       "iter": iter,
       "lr": lr,
       "mu": mu,
+      "clip_thresh": clip_thresh,
+      "beta": beta,
+      "curv_win_width": curv_win_width,
+      "zero_debias": zero_debias,
     }
 
 
@@ -71,6 +79,10 @@ class YFOptimizer(object):
     self._iter = state_dict['iter']
     self._lr = state_dict['lr']
     self._mu = state_dict['mu']
+    self._clip_thresh = state_dict['clip_thresh']
+    self._beta = state_dict['beta']
+    self._curv_win_width = state_dict['curv_win_width']
+    self._zero_debias = state_dict['zero_debias']
 
 
   def set_lr_factor(self, factor):
