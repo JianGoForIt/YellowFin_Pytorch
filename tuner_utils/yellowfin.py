@@ -5,7 +5,7 @@ import torch
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
-    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0):
+    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, auto_clip_fac=10.0):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -15,7 +15,8 @@ class YFOptimizer(object):
       lr: python scalar. The initial value of learning rate, we use 1.0 in our paper.
       mu: python scalar. The initial value of momentum, we use 0.0 in our paper.
       clip_thresh: python scalar. The cliping threshold for tf.clip_by_global_norm.
-        if None, no clipping will be carried out. 
+        if None, the automatic clipping will be carried out. The automatic clipping 
+        feature is parameterized by argument auto_clip_fac. 
       beta: python scalar. The smoothing parameter for estimations.
       delta_mu: for extensions. Not necessary in the basic use. (TODO)
     Other features:
@@ -32,6 +33,7 @@ class YFOptimizer(object):
     # it can be used for multiple times
     self._var_list = list(var_list)
     self._clip_thresh = clip_thresh
+    self._auto_clip_fac = auto_clip_fac
     self._beta = beta
     self._curv_win_width = curv_win_width
     self._zero_debias = zero_debias
@@ -192,6 +194,13 @@ class YFOptimizer(object):
     return
 
 
+  def auto_clip_thresh(self):
+    '''
+    Heuristic to automatically prevent sudden exploding gradient
+    '''
+    return math.sqrt(self._h_max) * self._auto_clip_fac
+
+
   def step(self):
     # add weight decay
     for group in self._optimizer.param_groups:
@@ -205,6 +214,10 @@ class YFOptimizer(object):
     
     if self._clip_thresh != None:
       torch.nn.utils.clip_grad_norm(self._var_list, self._clip_thresh)
+    elif self._iter != 0:
+      # do not clip the first iteration
+      torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
+
 
     # apply update
     self._optimizer.step()
