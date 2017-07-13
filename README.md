@@ -33,7 +33,7 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
 ## Detailed guidelines
 a. YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes.
 
-b. If you want to clip the gradient, you can also consider using the ```clip_thresh``` argument when initializing the YFOptimizer.
+b. The default setting will carry out automatic gradient clipping to prevent gradient explosion. If you want to manually set threshold to clip the gradient, you can consider using the ```clip_thresh``` argument when initializing the YFOptimizer. If you want to totally turn off gradient clipping, please use ```clip_thresh=None, auto_clip_fac=None```.
 
 c. If you want to use the typical lr-dropping technique after a ceritain number of epochs, or you want to more finely control the learning rate, please use ```set_lr_factor()``` in the YFOptimizer class. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
 
