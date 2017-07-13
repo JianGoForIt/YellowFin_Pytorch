@@ -48,7 +48,7 @@ We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch
 ## Implementation for other platforms
 For Tensorflow users, we implemented [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin).
 
-For MXNet users, Github user [StargazerZhu](https://github.com/StargazerZhu) has already implemented a Theano version here: [YellowFin MXNet Repo](https://github.com/StargazerZhu/YellowFin_MXNet).
+<!---For MXNet users, Github user [StargazerZhu](https://github.com/StargazerZhu) has already implemented a Theano version here: [YellowFin MXNet Repo](https://github.com/StargazerZhu/YellowFin_MXNet).--->
 
 For Theano users, Github user [botev](https://github.com/botev) has already implemented a Theano version here: [YellowFin Theano Repo](https://gist.github.com/botev/f8b32c00eafee222e47393f7f0747666).
 
