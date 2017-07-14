@@ -45,6 +45,8 @@ parser.add_argument('--cuda', action='store_true',
                     help='use CUDA')
 parser.add_argument('--log-interval', type=int, default=250, metavar='N',
                     help='report interval')
+parser.add_argument('--test-load-save', action='store_true',
+                    help='sanity check for model/optimizer loading')
 parser.add_argument('--save', type=str,  default='model.pt',
                     help='path to save the final model')
 parser.add_argument('--logdir', type=str, default='.',
@@ -155,6 +157,18 @@ def train():
 
         # for group in optimizer._optimizer.param_groups:
         #     print group['lr'], group['momentum']
+
+        if args.test_load_save:
+            with open(args.logdir + "/" + args.save, 'wb') as f:
+                tosave = dict()
+                tosave['model'] = model.state_dict()
+                tosave['optimizer'] = optimizer.state_dict()
+                torch.save(tosave, f)
+
+            with open(args.logdir + "/" + args.save, 'rb') as f:
+                loaded = torch.load(f)
+                model.load_state_dict(loaded['model'])
+                optimizer.load_state_dict(loaded['optimizer'])
 
         total_loss += loss.data
         train_loss_list.append(loss.data[0] )
