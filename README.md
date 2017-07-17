@@ -31,6 +31,20 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
 ```
 
 ## Detailed guidelines
+* YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes. 
+
+  * If the loss explodes after a very small number of iterations, you may want to lower the init lr to prevent the explosion at the beginining. 
+  
+  * We also have users reporting to use regularizer to avoid explosions.
+
+* If you want to more finely control the learning rate, or you want to use the typical lr-dropping technique after a ceritain number of epochs, please use ```set_lr_factor()``` in the YFOptimizer class. E.g. if you want to use a manually set constant learning rate, you can run ```set_lr_factor(desired_lr / self._lr)``` before ```self.step()``` at each iteration. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
+
+* If you want to clip the gradient, you can also consider using the ```clip_thresh``` argument when initializing the YFOptimizer. If you want to try out experimental auto-clip feature, please checkout *auto_clip branch* and refer to the ReadMe.txt for usage.
+
+* When using log probability style losses, please make sure the loss is properly normalized. In some RNN/LSTM cases, the cross_entropy need to be averaged by the number of samples in a minibatch. Sometimes, it also needs to be averaged over the number of classes and the sequence length of each sample in some PyTorch loss functions. E.g. in nn.MultiLabelSoftMarginLoss, ```size_average=True``` needs to be set.
+
+
+## Detailed guidelines
 a. YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes.
 
 b. If you want to clip the gradient, you can also consider using the ```clip_thresh``` argument when initializing the YFOptimizer. If you want to try out experimental auto-clip feature, please checkout auto_clip branch and refer to the ReadMe.txt for usage.
