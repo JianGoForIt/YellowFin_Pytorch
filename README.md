@@ -37,6 +37,8 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
   
   * We also have users reporting to use regularizer to avoid initial explosions.
 
+* If you want to use the typical lr-dropping technique after a ceritain number of epochs, or you want to more finely control the learning rate, please use ```set_lr_factor()``` in the YFOptimizer class. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
+
 * The default setting will carry out automatic gradient clipping to prevent gradient explosion. There are three cases regarding gradient clipping: 
 
   * If you want to manually set threshold to clip the gradient, you can consider using the ```clip_thresh=thresh_on_the_gradient_norm``` argument when initializing the YFOptimizer.
@@ -45,7 +47,6 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
   
   * If you want to keep the auto clipping feature, you can also play with ```auto_clip_fac=positive_value``` where lower value means stricter clipping and the default value 5.0 works well on the examples we tried out.
 
-* If you want to use the typical lr-dropping technique after a ceritain number of epochs, or you want to more finely control the learning rate, please use ```set_lr_factor()``` in the YFOptimizer class. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
 
 ## Additional experiments to test the repo
 We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L91) and [Tied LSTM on PTB](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/word_language_model/main.py#L191) to test the PyTorch implementation here. For more on experimental results, please refer to our [paper](https://arxiv.org/abs/1706.03471).
