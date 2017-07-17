@@ -35,7 +35,7 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
 
   * If the loss explodes after a very small number of iterations, you may want to lower the init lr to prevent the explosion at the beginining. 
   
-  * We also have users reporting to use regularizer to avoid initial explosions.
+  * We also have users reporting to use regularizer to avoid explosions.
 
 * If you want to use the typical lr-dropping technique after a ceritain number of epochs, or you want to more finely control the learning rate, please use ```set_lr_factor()``` in the YFOptimizer class. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22). 
 
