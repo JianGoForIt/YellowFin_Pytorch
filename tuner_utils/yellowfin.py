@@ -118,6 +118,8 @@ class YFOptimizer(object):
 
     self._grad_var /= -(debias_factor**2)
     self._grad_var += global_state['grad_norm_squared_avg'] / debias_factor
+    # in case of negative variance: the two term are using different debias factors
+    self._grad_var = max(self._grad_var, 1e-6)
     return
 
 
