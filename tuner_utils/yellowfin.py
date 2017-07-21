@@ -26,7 +26,7 @@ class YFOptimizer(object):
       in YellowFin. It is helpful when you want to do additional hand tuning
       or some decaying scheme to the tuned learning rate in YellowFin. 
       Example on using lr_factor can be found here:
-      (TODO)
+      https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22
     '''
     self._lr = lr
     self._mu = mu
