@@ -5,7 +5,7 @@ import torch
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
-    beta=0.999, curv_win_width=20, zero_debias=False, delta_mu=0.0, auto_clip_fac=1.1):
+    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, auto_clip_fac=1.1):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -72,12 +72,12 @@ class YFOptimizer(object):
       global_state["curv_win"] = torch.FloatTensor(self._curv_win_width, 1).zero_()
     curv_win = global_state["curv_win"]
     grad_norm_squared = self._global_state["grad_norm_squared"]
-    curv_win[self._iter % self._curv_win_width] = grad_norm_squared
+    curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared)
     valid_end = min(self._curv_win_width, self._iter + 1)
     # accelerate h_max/min in the begining to follow the varying 
     # trend of curvature. The acceleration will use small beta
     # and last for 200 iterations.
-    beta = min(self._beta, 0.9 + self._iter * (self._beta - 0.9) / 200)
+    beta = self._beta
     if self._iter == 0:
       global_state["h_min_avg"] = 0.0
       global_state["h_max_avg"] = 0.0
@@ -89,11 +89,11 @@ class YFOptimizer(object):
       global_state["h_max_avg"] * beta + (1 - beta) * torch.max(curv_win[:valid_end] )
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
-      self._h_min = global_state["h_min_avg"] / debias_factor
-      self._h_max = global_state["h_max_avg"] / debias_factor
+      self._h_min = np.exp(global_state["h_min_avg"] / debias_factor)
+      self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
     else:
-      self._h_min = global_state["h_min_avg"]
-      self._h_max = global_state["h_max_avg"]
+      self._h_min = np.exp(global_state["h_min_avg"] )
+      self._h_max = np.exp(global_state["h_max_avg"] )
     return
 
 
