@@ -5,7 +5,7 @@ import torch
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
-    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, auto_clip_fac=1.1):
+    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, auto_clip_fac=None):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -74,9 +74,8 @@ class YFOptimizer(object):
     grad_norm_squared = self._global_state["grad_norm_squared"]
     curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared)
     valid_end = min(self._curv_win_width, self._iter + 1)
-    # accelerate h_max/min in the begining to follow the varying 
-    # trend of curvature. The acceleration will use small beta
-    # and last for 200 iterations.
+    # we use running average over log scale, accelerating 
+    # h_max / min in the begining to follow the varying trend of curvature. 
     beta = self._beta
     if self._iter == 0:
       global_state["h_min_avg"] = 0.0
@@ -113,6 +112,7 @@ class YFOptimizer(object):
           state["grad_avg_squared"] = 0.0
         state["grad_avg"].mul_(beta).add_(1 - beta, grad)
         self._grad_var += torch.sum(state["grad_avg"] * state["grad_avg"] )
+    global_state["grad_avg_norm"] = math.sqrt(self._grad_var)
         
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
@@ -130,13 +130,11 @@ class YFOptimizer(object):
     global_state = self._global_state
     beta = self._beta
     if self._iter == 0:
-      global_state["grad_norm_avg"] = 0.0
       global_state["dist_to_opt_avg"] = 0.0
-    global_state["grad_norm_avg"] = \
-      global_state["grad_norm_avg"] * beta + (1 - beta) * math.sqrt(global_state["grad_norm_squared"] )
+            
     global_state["dist_to_opt_avg"] = \
       global_state["dist_to_opt_avg"] * beta \
-      + (1 - beta) * global_state["grad_norm_avg"] / global_state['grad_norm_squared_avg']
+      + (1 - beta) * global_state["grad_avg_norm"] / global_state['grad_norm_squared_avg']
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
       self._dist_to_opt = global_state["dist_to_opt_avg"] / debias_factor
