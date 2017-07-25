@@ -5,7 +5,7 @@ import torch
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
-    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0):
+    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, auto_clip_fac=None):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -14,8 +14,10 @@ class YFOptimizer(object):
     Args:
       lr: python scalar. The initial value of learning rate, we use 1.0 in our paper.
       mu: python scalar. The initial value of momentum, we use 0.0 in our paper.
-      clip_thresh: python scalar. The cliping threshold for tf.clip_by_global_norm.
-        if None, no clipping will be carried out. 
+      clip_thresh: python scalar. The manaully-set clipping threshold for tf.clip_by_global_norm.
+        if None, the automatic clipping will be carried out. The automatic clipping 
+        feature is parameterized by argument auto_clip_fac. The auto clip feature
+        can be switched off with auto_clip_fac = None
       beta: python scalar. The smoothing parameter for estimations.
       delta_mu: for extensions. Not necessary in the basic use. (TODO)
     Other features:
@@ -24,7 +26,7 @@ class YFOptimizer(object):
       in YellowFin. It is helpful when you want to do additional hand tuning
       or some decaying scheme to the tuned learning rate in YellowFin. 
       Example on using lr_factor can be found here:
-      (TODO)
+      https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/tuner_utils/yellowfin.py#L22
     '''
     self._lr = lr
     self._mu = mu
@@ -32,6 +34,7 @@ class YFOptimizer(object):
     # it can be used for multiple times
     self._var_list = list(var_list)
     self._clip_thresh = clip_thresh
+    self._auto_clip_fac = auto_clip_fac
     self._beta = beta
     self._curv_win_width = curv_win_width
     self._zero_debias = zero_debias
@@ -108,8 +111,10 @@ class YFOptimizer(object):
       global_state["curv_win"] = torch.FloatTensor(self._curv_win_width, 1).zero_()
     curv_win = global_state["curv_win"]
     grad_norm_squared = self._global_state["grad_norm_squared"]
-    curv_win[self._iter % self._curv_win_width] = grad_norm_squared
+    curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared)
     valid_end = min(self._curv_win_width, self._iter + 1)
+    # we use running average over log scale, accelerating 
+    # h_max / min in the begining to follow the varying trend of curvature.
     beta = self._beta
     if self._iter == 0:
       global_state["h_min_avg"] = 0.0
@@ -122,11 +127,11 @@ class YFOptimizer(object):
       global_state["h_max_avg"] * beta + (1 - beta) * torch.max(curv_win[:valid_end] )
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
-      self._h_min = global_state["h_min_avg"] / debias_factor
-      self._h_max = global_state["h_max_avg"] / debias_factor
+      self._h_min = np.exp(global_state["h_min_avg"] / debias_factor)
+      self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
     else:
-      self._h_min = global_state["h_min_avg"]
-      self._h_max = global_state["h_max_avg"]
+      self._h_min = np.exp(global_state["h_min_avg"] )
+      self._h_max = np.exp(global_state["h_max_avg"] )
     return
 
 
@@ -154,6 +159,8 @@ class YFOptimizer(object):
 
     self._grad_var /= -(debias_factor**2)
     self._grad_var += global_state['grad_norm_squared_avg'] / debias_factor
+    # in case of negative variance: the two term are using different debias factors
+    self._grad_var = max(self._grad_var, 1e-6)
     return
 
 
@@ -231,6 +238,13 @@ class YFOptimizer(object):
     return
 
 
+  def auto_clip_thresh(self):
+    '''
+    Heuristic to automatically prevent sudden exploding gradient
+    '''
+    return math.sqrt(self._h_max) * self._auto_clip_fac
+
+
   def step(self):
     # add weight decay
     for group in self._optimizer.param_groups:
@@ -244,6 +258,10 @@ class YFOptimizer(object):
     
     if self._clip_thresh != None:
       torch.nn.utils.clip_grad_norm(self._var_list, self._clip_thresh)
+    elif (self._iter != 0 and self._auto_clip_fac != None):
+      # do not clip the first iteration
+      torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
+
 
     # apply update
     self._optimizer.step()
