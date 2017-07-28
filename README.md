@@ -10,6 +10,7 @@ For more usage details, please refer to the inline documentation of ```tuner_uti
 
 ## Updates
 **[2017.07.03] Fixed a gradient clipping bug. Please pull our latest master branch to make gradient clipping great again in YellowFin.**
+
 **[2017.07.28] Added logrithmic smoothing to improve stableness against ocassional exploding gradient **
 
 ## Setup instructions for experiments
