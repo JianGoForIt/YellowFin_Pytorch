@@ -6,7 +6,7 @@ import torch
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=False):
+    auto_clip_fac=None, force_non_inc_step_after_iter=None):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -21,8 +21,9 @@ class YFOptimizer(object):
         can be switched off with auto_clip_fac = None
       beta: python scalar. The smoothing parameter for estimations.
       delta_mu: for extensions. Not necessary in the basic use. 
-      force_non_inc_step: in some cases, it is necessary to force ||lr * gradient||
-      to be non-increasing for stableness. Default is turning off this feature.
+      force_non_inc_step_after_iter: in some rare cases, it is necessary to force ||lr * gradient||
+      to be non-increasing for stableness after some iterations. 
+      Default is turning off this feature.
     Other features:
       If you want to manually control the learning rates, self.lr_factor is
       an interface to the outside, it is an multiplier for the internal learning rate
@@ -41,7 +42,7 @@ class YFOptimizer(object):
     self._beta = beta
     self._curv_win_width = curv_win_width
     self._zero_debias = zero_debias
-    self._force_non_inc_step = force_non_inc_step
+    self._force_non_inc_step_after_iter = force_non_inc_step_after_iter
     self._optimizer = torch.optim.SGD(self._var_list, lr=self._lr, 
       momentum=self._mu, weight_decay=weight_decay)
     self._iter = 0
@@ -190,11 +191,11 @@ class YFOptimizer(object):
   def lr_grad_norm_avg(self):
     global_state = self._global_state
     beta = self._beta
-    if self._iter == 0:
+    if "lr_grad_norm_avg" not in global_state:
       global_state['grad_norm_squared_avg_log'] = 0.0
     global_state['grad_norm_squared_avg_log'] = \
       global_state['grad_norm_squared_avg_log'] * beta + (1 - beta) * np.log(global_state['grad_norm_squared'] )
-    if self._iter == 0:
+    if "lr_grad_norm_avg" not in global_state:
       global_state["lr_grad_norm_avg"] = \
         0.0 * beta + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] ) )
     else:
@@ -262,7 +263,7 @@ class YFOptimizer(object):
   def update_hyper_param(self):
     for group in self._optimizer.param_groups:
       group['momentum'] = self._mu
-      if self._force_non_inc_step == False:
+      if self._force_non_inc_step_after_iter == None or self._iter < self._force_non_inc_step_after_iter:
         group['lr'] = self._lr * self._lr_factor
       else:
         # for the learning rate we force to guarantee 
