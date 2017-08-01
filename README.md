@@ -46,8 +46,8 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
   * If you want to manually set threshold to clip the gradient, you can consider using the ```clip_thresh=thresh_on_the_gradient_norm``` argument when initializing the YFOptimizer.
   
   * If you want to totally turn off gradient clipping, please use ```clip_thresh=None, auto_clip_fac=None``` when initializing the YFOptimizer.
-  
-  * If you want to keep the auto clipping feature, you can also play with ```auto_clip_fac=positive_value``` where lower value means stricter clipping and the value 1.1 or 2 work well on a few examples we tried out.
+  
+  * If you want to keep the auto clipping feature, you can also play with ```auto_clip_fac=positive_value``` where lower value means stricter clipping and the value 1.1 or 2 work well on a few examples we tried out.
   
 * When using log probability style losses, please make sure the loss is properly normalized. In some RNN/LSTM cases, the cross_entropy need to be averaged by the number of samples in a minibatch. Sometimes, it also needs to be averaged over the number of classes and the sequence length of each sample in some PyTorch loss functions. E.g. in nn.MultiLabelSoftMarginLoss, ```size_average=True``` needs to be set.
 
