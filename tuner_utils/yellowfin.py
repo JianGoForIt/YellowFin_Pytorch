@@ -6,7 +6,7 @@ import torch
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=True): # TODO change force_non to False
+    auto_clip_fac=None, force_non_inc_step=False):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
