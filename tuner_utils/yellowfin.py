@@ -275,7 +275,7 @@ class YFOptimizer(object):
         # for the learning rate we force to guarantee 
         # lr * grad_norm is non-increasing. Note exponentially
         # averaged stat in lr_grad_norm_avg starts at iteration
-        # self._force_non_inc_step_after_iter
+        # self._force_non_inc_step_after_iter. Not necessary for basic use.
         self.lr_grad_norm_avg()
         debias_factor = self.zero_debias_factor_delay(self._force_non_inc_step_after_iter)
         group['lr'] = min(self._lr * self._lr_factor,
