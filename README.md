@@ -33,7 +33,7 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
 ```
 
 ## Detailed guidelines
-* YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes. 
+* Basic use: YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes. 
 
   * If the loss explodes after a very small number of iterations, you may want to lower the init lr to prevent the explosion at the beginining. 
   
@@ -47,9 +47,11 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
   
   * If you want to totally turn off gradient clipping, please use ```clip_thresh=None, auto_clip_fac=None``` when initializing the YFOptimizer.
   
-  * If you want to keep the auto clipping feature, you can also play with ```auto_clip_fac=positive_value``` where lower value means stricter clipping and the value 1.1 or 2 work well on a few examples we tried out.
+  * If you want to keep the auto clipping feature, you can also play with ```auto_clip_fac=positive_value``` where lower value means stricter clipping and the value 1.1 or 2 work well on a few examples we tried out.
   
 * When using log probability style losses, please make sure the loss is properly normalized. In some RNN/LSTM cases, the cross_entropy need to be averaged by the number of samples in a minibatch. Sometimes, it also needs to be averaged over the number of classes and the sequence length of each sample in some PyTorch loss functions. E.g. in nn.MultiLabelSoftMarginLoss, ```size_average=True``` needs to be set.
+
+* In some rare cases, we have observe increasing value of lr * || grad ||, i.e. the move, may result in unstableness. We implemented an engineering trick to enforce non-increasing value of lr * || grad ||. The default setting turns the feature off, you can turn it on with ```force_non_inc_step_after_iter=the starting iter you want to enforce the non-increasing value ``` **if it is really necessary**. We recommend ```force_non_inc_step_after_iter``` to be at least a few hundreds because some models may need to gradually raise the magnitude of gradient in the beginning (e.g. a model, not properly initialized, may have near zero-gradient and need iterations to get reasonable gradient level).
 
 ## Additional experiments to test the repo
 We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L91) and [Tied LSTM on PTB](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/word_language_model/main.py#L191) to test the PyTorch implementation here. For more on experimental results, please refer to our [paper](https://arxiv.org/abs/1706.03471).
