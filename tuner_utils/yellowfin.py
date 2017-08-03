@@ -51,8 +51,13 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
-    pass
+    self.param_groups = self._optimizer.param_groups
 
+    def state_dict(self):
+        return self._optimizer.state_dict()
+
+    def load_state_dict(self, state_dict):
+        return self._optimizer.load_state_dict(state_dict)
 
   def state_dict(self):
     sgd_state_dict = self._optimizer.state_dict()
