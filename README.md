@@ -37,7 +37,7 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
 For more experiments, please refer to our [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin).
 
 ## Detailed guidelines
-* Basic use: YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes. 
+* **Basic use**: YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes. 
 
   * If the loss explodes after a very small number of iterations, you may want to lower the init lr to prevent the explosion at the beginining. 
   
