@@ -5,7 +5,7 @@ import torch
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
-    beta=0.999, curv_win_width=20, zero_debias=True, delta_mu=0.0, 
+    beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step_after_iter=None):
     '''
     clip thresh is the threshold value on ||lr * gradient||
@@ -20,6 +20,10 @@ class YFOptimizer(object):
         feature is parameterized by argument auto_clip_fac. The auto clip feature
         can be switched off with auto_clip_fac = None
       beta: python scalar. The smoothing parameter for estimations.
+      sparsity_debias: gradient norm and curvature are biased to larger values when 
+      calculated with sparse gradient. This is useful when the model is very sparse,
+      e.g. LSTM with word embedding. For non-sparse CNN, turning it off could slightly
+      accelerate the speed.
       delta_mu: for extensions. Not necessary in the basic use. 
       force_non_inc_step_after_iter: in some rare cases, it is necessary to force ||lr * gradient||
       to be non-increasing for stableness after some iterations. 
@@ -42,6 +46,7 @@ class YFOptimizer(object):
     self._beta = beta
     self._curv_win_width = curv_win_width
     self._zero_debias = zero_debias
+    self._sparsity_debias = sparsity_debias
     self._force_non_inc_step_after_iter = force_non_inc_step_after_iter
     self._optimizer = torch.optim.SGD(self._var_list, lr=self._lr, 
       momentum=self._mu, weight_decay=weight_decay)
@@ -142,6 +147,9 @@ class YFOptimizer(object):
     else:
       self._h_min = np.exp(global_state["h_min_avg"] )
       self._h_max = np.exp(global_state["h_max_avg"] )
+    if self._sparsity_debias:
+      self._h_min *= self._sparsity_avg
+      self._h_max *= self._sparsity_avg
     return
 
 
@@ -171,6 +179,8 @@ class YFOptimizer(object):
     self._grad_var += global_state['grad_norm_squared_avg'] / debias_factor
     # in case of negative variance: the two term are using different debias factors
     self._grad_var = max(self._grad_var, 1e-6)
+    if self._sparsity_debias:
+      self._grad_var *= self._sparsity_avg
     return
 
 
@@ -190,6 +200,29 @@ class YFOptimizer(object):
       self._dist_to_opt = global_state["dist_to_opt_avg"] / debias_factor
     else:
       self._dist_to_opt = global_state["dist_to_opt_avg"]
+    if self._sparsity_debias:
+      self._dist_to_opt /= np.sqrt(self._sparsity_avg)
+    return
+
+
+  def grad_sparsity(self):
+    global_state = self._global_state
+    if self._iter == 0:
+      global_state["sparsity_avg"] = 0.0
+    non_zero_cnt = 0.0
+    all_entry_cnt = 0.0
+    for group in self._optimizer.param_groups:
+      for p in group['params']:
+        if p.grad is None:
+          continue
+        grad = p.grad.data
+        non_zero_cnt += torch.nonzero(grad).size()[0]
+        all_entry_cnt += torch.numel(grad)
+    beta = self._beta
+    global_state["sparsity_avg"] = beta * global_state["sparsity_avg"] \
+      + (1 - beta) * non_zero_cnt / float(all_entry_cnt)
+    self._sparsity_avg = \
+      global_state["sparsity_avg"] / self.zero_debias_factor()
     return
 
 
@@ -237,6 +270,9 @@ class YFOptimizer(object):
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
     # global_state['grad_norm_squared_avg'].mul_(beta).add_(1 - beta, global_state['grad_norm_squared'] )
         
+    if self._sparsity_debias:
+      self.grad_sparsity()
+
     self.curvature_range()
     self.grad_variance()
     self.dist_to_opt()
