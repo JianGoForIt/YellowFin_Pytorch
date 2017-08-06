@@ -68,6 +68,16 @@ We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch
 
 ![Tied LSTM](plots/tied_ptb_test_perp.png)
 
+## Citation
+If you use YellowFin in your paper, please cite the paper:
+```
+@article{zhang2017yellowfin,
+  title={YellowFin and the Art of Momentum Tuning},
+  author={Zhang, Jian and Mitliagkas, Ioannis and R{\'e}, Christopher},
+  journal={arXiv preprint arXiv:1706.03471},
+  year={2017}
+}
+```
 
 ## Implementation for other platforms
 For Tensorflow users, we implemented [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin).
