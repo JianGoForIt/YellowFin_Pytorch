@@ -8,6 +8,8 @@ For more technical details, please refer to our paper [YellowFin and the Art of 
 
 For more usage details, please refer to the inline documentation of ```tuner_utils/yellowfin.py```. Example usage can be found here for [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L91) and [Tied LSTM on PTB](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/word_language_model/main.py#L191).
 
+**YellowFin is under active development. Many members of the community have kindly submitted issues and pull requests. We are incorporating fixes and smoothing things out. As a result the repository code is in flux. Please make sure you use the latest version and submit any issues you might have!**
+
 ## Updates
 **[2017.07.03] Fixed a gradient clipping bug. Please pull our latest master branch to make gradient clipping great again in YellowFin.**
 
