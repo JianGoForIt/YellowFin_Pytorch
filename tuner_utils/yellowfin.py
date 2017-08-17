@@ -180,7 +180,9 @@ class YFOptimizer(object):
 
 
   def get_cubic_root(self):
-    # we substitute x, which is sqrt(mu), with x = y + 1.
+    # We have the equation x^2 D^2 + (1-x)^4 * C / h_min^2
+    # where x = sqrt(mu).
+    # We substitute x, which is sqrt(mu), with x = y + 1.
     # It gives y^3 + py = q
     # where p = (D^2 h_min^2)/(2*C) and q = -p.
     # We use the Vieta's substution to compute the root.
