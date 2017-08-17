@@ -19,6 +19,8 @@ For more usage details, please refer to the inline documentation of ```tuner_uti
 
 **[2017.08.05] Added feature to correct estimation bias from sparse gradient.**
 
+**[2017.08.16] Replace numpy root solver with closed form solution using Vieta's substitution for cubic eqaution. It solves the stability issue of the numpy root solver. **
+
 ## Setup instructions for experiments
 Please clone the master branch and follow the instructions to run YellowFin on [ResNext](https://arxiv.org/abs/1611.05431) for CIFAR10 and [tied LSTM](https://arxiv.org/pdf/1611.01462.pdf) on Penn Treebank for language modeling. The models are adapted from [ResNext repo](https://github.com/kuangliu/pytorch-cifar) and [PyTorch example tied LSTM repo](https://github.com/pytorch/examples/tree/master/word_language_model) respectively. Thanks to the researchers for developing the models. **For more experiments on more convolutional and recurrent neural networks, please refer to our [Tensorflow implementation](https://github.com/JianGoForIt/YellowFin) of YellowFin**.
 
