@@ -179,15 +179,25 @@ class YFOptimizer(object):
     return
 
 
+  def get_cubic_root(self):
+    # we substitute x, which is sqrt(mu), with x = y + 1.
+    # It gives y^3 + py = q
+    # where p = (D^2 h_min^2)/(2*C) and q = -p.
+    # We use the Vieta's substution to compute the root.
+    # There is only one real solution y (which is in [0, 1] ).
+    # http://mathworld.wolfram.com/VietasSubstitution.html
+    p = self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var
+    w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
+    w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
+    y = w - p / 3.0 / w
+    x = y + 1
+    return x
+
+
   def get_mu(self):
-    coef = [-1.0, 3.0, 0.0, 1.0]
-    coef[2] = -(3 + self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var)
-    roots = np.roots(coef)
-    root = roots[np.logical_and(np.logical_and(np.real(roots) > 0.0, 
-      np.real(roots) < 1.0), np.imag(roots) < 1e-5) ]
-    assert root.size == 1
+    root = self.get_cubic_root()
     dr = self._h_max / self._h_min
-    self._mu_t = max(np.real(root)[0]**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
+    self._mu_t = max(root**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
     return 
 
 
