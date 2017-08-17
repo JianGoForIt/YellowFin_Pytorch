@@ -302,6 +302,9 @@ class YFOptimizer(object):
     assert not math.isnan(self._dist_to_opt)
     assert not math.isnan(self._h_min)
     assert not math.isnan(self._grad_var)
+    assert not math.isinf(self._dist_to_opt)
+    assert not math.isinf(self._h_min)
+    assert not math.isinf(self._grad_var)
     p = self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var
     w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
