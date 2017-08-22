@@ -216,7 +216,9 @@ class YFOptimizer(object):
         if p.grad is None:
           continue
         grad = p.grad.data
-        non_zero_cnt += torch.nonzero(grad).size()[0]
+        grad_non_zero = grad.nonzero()
+        if grad_non_zero.dim() > 0:
+          non_zero_cnt += grad_non_zero.size()[0]
         all_entry_cnt += torch.numel(grad)
     beta = self._beta
     global_state["sparsity_avg"] = beta * global_state["sparsity_avg"] \
