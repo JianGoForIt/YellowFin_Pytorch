@@ -359,7 +359,7 @@ class YFOptimizer(object):
     
     if self._clip_thresh != None:
       torch.nn.utils.clip_grad_norm(self._var_list, self._clip_thresh)
-    elif (self._iter != 0 and self._auto_clip_fac != None):
+    elif (hasattr(self, '_h_max') and self._auto_clip_fac != None):
       # do not clip the first iteration
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
 
