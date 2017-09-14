@@ -83,8 +83,8 @@ class YFOptimizer(object):
       "clip_thresh": clip_thresh,
       "beta": beta,
       "curv_win_width": curv_win_width,
-      "zero_debias": zero_debias
-      "h_min": h_min
+      "zero_debias": zero_debias,
+      "h_min": h_min,
       "h_max": h_max
     }
 
