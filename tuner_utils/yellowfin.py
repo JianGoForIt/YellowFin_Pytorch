@@ -343,10 +343,10 @@ class YFOptimizer(object):
 
 
   def get_mu(self):
-      root = self.get_cubic_root()
-      dr = self._h_max / self._h_min
-      self._mu_t = max(root**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
-      return 
+    root = self.get_cubic_root()
+    dr = self._h_max / self._h_min
+    self._mu_t = max(root**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
+    return 
 
 
   def update_hyper_param(self):
@@ -389,7 +389,6 @@ class YFOptimizer(object):
     elif (self._iter != 0 and self._auto_clip_fac != None):
       # do not clip the first iteration
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
-
 
     # apply update
     self._optimizer.step()
