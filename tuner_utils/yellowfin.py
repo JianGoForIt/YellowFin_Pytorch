@@ -1,7 +1,7 @@
 import math
-# for torch optim sgd
 import numpy as np
 import torch
+import logging
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
@@ -47,6 +47,24 @@ class YFOptimizer(object):
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
     pass
+
+
+  def backup_stat(self):
+    # in case of numerical issues, we restore the 
+    # statistics to the latest valid value
+    self._global_state_backup = self._global_state.copy()
+    self._mu_t_backup = self._mu_t
+    self._lr_t_backup = self._lr_t
+    return
+
+
+  def restore_stat(self):
+    # restore statistic to eliminate the influence
+    # of numerical issues
+    self._global_state = self._global_state_backup.copy()
+    self._mu_t = self._mu_t_backup
+    self._lr_t = self._lr_t_backup
+    return
 
 
   def set_lr_factor(self, factor):
@@ -167,8 +185,15 @@ class YFOptimizer(object):
     self.grad_variance()
     self.dist_to_opt()
     if self._iter > 0:
-      self.get_mu()    
-      self.get_lr()
+      try:
+        self.get_mu()    
+        self.get_lr()
+        self.backup_stat()
+      except:
+        # restore statistics if numerical issue happens in the cubic solver
+        logging.warning("Numerical instability inside cubic root solver!")
+        self.restore_stat()
+
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
     return
