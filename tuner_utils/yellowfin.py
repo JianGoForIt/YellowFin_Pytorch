@@ -70,6 +70,8 @@ class YFOptimizer(object):
     beta = self._beta
     curv_win_width = self._curv_win_width
     zero_debias = self._zero_debias
+    h_min = self._h_min
+    h_max = self._h_max
 
     return {
       "sgd_state_dict": sgd_state_dict,
@@ -82,6 +84,8 @@ class YFOptimizer(object):
       "beta": beta,
       "curv_win_width": curv_win_width,
       "zero_debias": zero_debias
+      "h_min": h_min
+      "h_max": h_max
     }
 
 
@@ -97,6 +101,9 @@ class YFOptimizer(object):
     self._beta = state_dict['beta']
     self._curv_win_width = state_dict['curv_win_width']
     self._zero_debias = state_dict['zero_debias']
+    self._h_min = state_dict["h_min"]
+    self._h_max = state_dict["h_max"]
+    return
 
 
   def backup_stat(self):
@@ -128,6 +135,7 @@ class YFOptimizer(object):
 
   def zero_grad(self):
     self._optimizer.zero_grad()
+    return
 
 
   def zero_debias_factor(self):
