@@ -1,7 +1,7 @@
 import math
-# for torch optim sgd
 import numpy as np
 import torch
+import logging
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
@@ -56,10 +56,10 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
-    pass
 
 
   def state_dict(self):
+    # for checkpoint saving
     sgd_state_dict = self._optimizer.state_dict()
     global_state = self._global_state
     lr_factor = self._lr_factor
@@ -81,11 +81,12 @@ class YFOptimizer(object):
       "clip_thresh": clip_thresh,
       "beta": beta,
       "curv_win_width": curv_win_width,
-      "zero_debias": zero_debias,
+      "zero_debias": zero_debias
     }
 
 
   def load_state_dict(self, state_dict):
+    # for checkpoint saving
     self._optimizer.load_state_dict(state_dict['sgd_state_dict'])
     self._global_state = state_dict['global_state']
     self._lr_factor = state_dict['lr_factor']
@@ -96,6 +97,24 @@ class YFOptimizer(object):
     self._beta = state_dict['beta']
     self._curv_win_width = state_dict['curv_win_width']
     self._zero_debias = state_dict['zero_debias']
+
+
+  def backup_stat(self):
+    # in case of numerical issues, we restore the 
+    # statistics to the latest valid value
+    self._global_state_backup = self._global_state.copy()
+    self._mu_t_backup = self._mu_t
+    self._lr_t_backup = self._lr_t
+    return
+
+
+  def restore_stat(self):
+    # restore statistic to eliminate the influence
+    # of numerical issues
+    self._global_state = self._global_state_backup.copy()
+    self._mu_t = self._mu_t_backup
+    self._lr_t = self._lr_t_backup
+    return
 
 
   def set_lr_factor(self, factor):
@@ -270,7 +289,6 @@ class YFOptimizer(object):
         
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
-    # global_state['grad_norm_squared_avg'].mul_(beta).add_(1 - beta, global_state['grad_norm_squared'] )
         
     if self._sparsity_debias:
       self.grad_sparsity()
@@ -280,8 +298,15 @@ class YFOptimizer(object):
     self.dist_to_opt()
 
     if self._iter > 0:
-      self.get_mu()    
-      self.get_lr()
+      try:
+        self.get_mu()    
+        self.get_lr()
+        self.backup_stat()
+      except:
+        # restore statistics if numerical issue happens in the cubic solver
+        logging.warning("Numerical instability inside cubic root solver!")
+        self.restore_stat()
+
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
     return
@@ -301,12 +326,6 @@ class YFOptimizer(object):
     # We use the Vieta's substution to compute the root.
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
-    assert not math.isnan(self._dist_to_opt)
-    assert not math.isnan(self._h_min)
-    assert not math.isnan(self._grad_var)
-    assert not math.isinf(self._dist_to_opt)
-    assert not math.isinf(self._h_min)
-    assert not math.isinf(self._grad_var)
     p = self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var
     w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
@@ -316,10 +335,10 @@ class YFOptimizer(object):
 
 
   def get_mu(self):
-    root = self.get_cubic_root()
-    dr = self._h_max / self._h_min
-    self._mu_t = max(root**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
-    return 
+      root = self.get_cubic_root()
+      dr = self._h_max / self._h_min
+      self._mu_t = max(root**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
+      return 
 
 
   def update_hyper_param(self):
