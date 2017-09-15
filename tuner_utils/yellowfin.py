@@ -3,6 +3,11 @@ import numpy as np
 import torch
 import logging
 
+logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_with_backup.log',level=logging.DEBUG)
+logging.debug('This message should go to the log file')
+
+eps = 1e-15
+
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
@@ -36,6 +41,9 @@ class YFOptimizer(object):
       Example on using lr_factor can be found here:
       https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109
     '''
+
+    print "start working on it"
+
     self._lr = lr
     self._mu = mu
     # we convert var_list from generator to list so that
@@ -56,6 +64,11 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
+
+    # for backup statistics in case of numerical instability
+    self._global_state_backup = None
+    self._mu_t_backup = None
+    self._lr_t_backup = None
 
 
   def state_dict(self):
@@ -118,9 +131,12 @@ class YFOptimizer(object):
   def restore_stat(self):
     # restore statistic to eliminate the influence
     # of numerical issues
-    self._global_state = self._global_state_backup.copy()
-    self._mu_t = self._mu_t_backup
-    self._lr_t = self._lr_t_backup
+    if self._global_state_backup is not None:
+      self._global_state = self._global_state_backup.copy()
+    if self._mu_t_backup is not None:
+      self._mu_t = self._mu_t_backup
+    if self._lr_t_backup is not None:
+      self._lr_t = self._lr_t_backup
     return
 
 
@@ -153,7 +169,8 @@ class YFOptimizer(object):
       global_state["curv_win"] = torch.FloatTensor(self._curv_win_width, 1).zero_()
     curv_win = global_state["curv_win"]
     grad_norm_squared = self._global_state["grad_norm_squared"]
-    curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared)
+    curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared + eps)
+    # curv_win[self._iter % self._curv_win_width] = grad_norm_squared
     valid_end = min(self._curv_win_width, self._iter + 1)
     # we use running average over log scale, accelerating 
     # h_max / min in the begining to follow the varying trend of curvature.
@@ -171,12 +188,19 @@ class YFOptimizer(object):
       debias_factor = self.zero_debias_factor()
       self._h_min = np.exp(global_state["h_min_avg"] / debias_factor)
       self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
+      # self._h_min = global_state["h_min_avg"] / debias_factor
+      # self._h_max = global_state["h_max_avg"] / debias_factor
     else:
       self._h_min = np.exp(global_state["h_min_avg"] )
       self._h_max = np.exp(global_state["h_max_avg"] )
+      # self._h_min = global_state["h_min_avg"]
+      # self._h_max = global_state["h_max_avg"]
     if self._sparsity_debias:
       self._h_min *= self._sparsity_avg
       self._h_max *= self._sparsity_avg
+
+    logging.debug("sparsity %.2E, %.2E", self._sparsity_avg, np.log(self._sparsity_avg) / np.log(10.0) )
+
     return
 
 
@@ -205,7 +229,7 @@ class YFOptimizer(object):
     self._grad_var /= -(debias_factor**2)
     self._grad_var += global_state['grad_norm_squared_avg'] / debias_factor
     # in case of negative variance: the two term are using different debias factors
-    self._grad_var = max(self._grad_var, 1e-6)
+    self._grad_var = max(self._grad_var, eps)
     if self._sparsity_debias:
       self._grad_var *= self._sparsity_avg
     return
@@ -258,18 +282,22 @@ class YFOptimizer(object):
   def lr_grad_norm_avg(self):
     # this is for enforcing non-increasing lr * grad_norm after 
     # certain number of iterations. Not necessary for basic use.
+    
+    # DEBUG: not suppose to use at this place
+    assert 0
+
     global_state = self._global_state
     beta = self._beta
     if "lr_grad_norm_avg" not in global_state:
       global_state['grad_norm_squared_avg_log'] = 0.0
     global_state['grad_norm_squared_avg_log'] = \
-      global_state['grad_norm_squared_avg_log'] * beta + (1 - beta) * np.log(global_state['grad_norm_squared'] )
+      global_state['grad_norm_squared_avg_log'] * beta + (1 - beta) * np.log(global_state['grad_norm_squared'] + eps)
     if "lr_grad_norm_avg" not in global_state:
       global_state["lr_grad_norm_avg"] = \
-        0.0 * beta + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] ) )
+        0.0 * beta + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] + eps) )
     else:
       undebias_val = global_state["lr_grad_norm_avg"] * beta \
-        + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] ) )
+        + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] + eps) )
       debias_factor = self.zero_debias_factor_delay(self._force_non_inc_step_after_iter)
       debias_factor_prev = self.zero_debias_factor_delay(self._force_non_inc_step_after_iter + 1)
       prev_val = global_state["lr_grad_norm_avg"] / debias_factor_prev
@@ -294,6 +322,10 @@ class YFOptimizer(object):
           continue
         grad = p.grad.data
         global_state['grad_norm_squared'] += torch.sum(grad * grad)
+
+    logging.debug("Iteration  %f", self._iter) 
+    logging.debug("grad norm squared %.2E, %.2E", global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10) )
+
         
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
@@ -305,10 +337,21 @@ class YFOptimizer(object):
     self.grad_variance()
     self.dist_to_opt()
 
+
+    logging.debug("h_min %.2E, %.2E", self._h_min, np.log(self._h_min) )
+    logging.debug("dist %.2E, %.2E", self._dist_to_opt, np.log(self._dist_to_opt) )
+    logging.debug("var %.2E, %.2E", self._grad_var, np.log(self._grad_var) )
+
+
     if self._iter > 0:
       try:
         self.get_mu()    
         self.get_lr()
+
+        logging.debug("lr_t %.2E", self._lr_t) 
+        logging.debug("mu_t %.2E", self._mu_t)
+
+
         self.backup_stat()
       except:
         # restore statistics if numerical issue happens in the cubic solver
@@ -317,11 +360,16 @@ class YFOptimizer(object):
 
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
+
+      logging.debug("lr %.2E", self._lr)
+      logging.debug("mu %.2E", self._mu)
+
+
     return
 
 
   def get_lr(self):
-    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / self._h_min
+    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps)
     return
 
 
@@ -334,10 +382,25 @@ class YFOptimizer(object):
     # We use the Vieta's substution to compute the root.
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
-    p = self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var
+    p = self._dist_to_opt**2 * (self._h_min + eps)**2 / 2 / self._grad_var
+
+    logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
+
     w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
+
+
+    logging.debug("w3 %.2E %.2E", w3, np.log(w3) / np.log(10) )
+
+
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
+    
+    logging.debug("w %.2E %.2E", w, np.log(w) / np.log(10) )
+
     y = w - p / 3.0 / w
+
+    logging.debug("y %.2E %.2E %.2E", y, np.log(y) / np.log(10), p/3.0/w)
+
+
     x = y + 1
     return x
 
