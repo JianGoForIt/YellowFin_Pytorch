@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import logging
 
-logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_with_backup.log',level=logging.DEBUG)
+logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_no_backup_09_15.log',level=logging.DEBUG)
 logging.debug('This message should go to the log file')
 
 eps = 1e-15
@@ -188,16 +188,17 @@ class YFOptimizer(object):
       debias_factor = self.zero_debias_factor()
       self._h_min = np.exp(global_state["h_min_avg"] / debias_factor)
       self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
-      # self._h_min = global_state["h_min_avg"] / debias_factor
-      # self._h_max = global_state["h_max_avg"] / debias_factor
     else:
       self._h_min = np.exp(global_state["h_min_avg"] )
       self._h_max = np.exp(global_state["h_max_avg"] )
-      # self._h_min = global_state["h_min_avg"]
-      # self._h_max = global_state["h_max_avg"]
     if self._sparsity_debias:
       self._h_min *= self._sparsity_avg
       self._h_max *= self._sparsity_avg
+
+    # prevent numerical issue
+    self._h_max = min(max(self._h_max, eps), 1.0 / eps)
+    self._h_min = min(max(self._h_min, eps), 1.0 / eps)
+
 
     logging.debug("sparsity %.2E, %.2E", self._sparsity_avg, np.log(self._sparsity_avg) / np.log(10.0) )
 
@@ -232,6 +233,9 @@ class YFOptimizer(object):
     self._grad_var = max(self._grad_var, eps)
     if self._sparsity_debias:
       self._grad_var *= self._sparsity_avg
+
+    # prevent numerical issue
+    self._grad_var = min(max(self._grad_var, eps), 1.0 / eps)
     return
 
 
@@ -253,6 +257,9 @@ class YFOptimizer(object):
       self._dist_to_opt = global_state["dist_to_opt_avg"]
     if self._sparsity_debias:
       self._dist_to_opt /= np.sqrt(self._sparsity_avg)
+
+    # prevent numerical issue
+    self._dist_to_opt = min(max(self._dist_to_opt, eps), 1.0 / eps)
     return
 
 
@@ -276,6 +283,9 @@ class YFOptimizer(object):
       + (1 - beta) * non_zero_cnt / float(all_entry_cnt)
     self._sparsity_avg = \
       global_state["sparsity_avg"] / self.zero_debias_factor()
+
+    # prevent numerical issue
+    self._sparsity_avg = min(max(self._sparsity_avg, eps), 1.0 / eps)
     return
 
 
@@ -344,19 +354,19 @@ class YFOptimizer(object):
 
 
     if self._iter > 0:
-      try:
-        self.get_mu()    
-        self.get_lr()
+      # try:
+      self.get_mu()    
+      self.get_lr()
 
-        logging.debug("lr_t %.2E", self._lr_t) 
-        logging.debug("mu_t %.2E", self._mu_t)
+      logging.debug("lr_t %.2E", self._lr_t) 
+      logging.debug("mu_t %.2E", self._mu_t)
 
 
-        self.backup_stat()
-      except:
-        # restore statistics if numerical issue happens in the cubic solver
-        logging.warning("Numerical instability inside cubic root solver!")
-        self.restore_stat()
+      #   self.backup_stat()
+      # except:
+      #   # restore statistics if numerical issue happens in the cubic solver
+      #   logging.warning("Numerical instability inside cubic root solver!")
+      #   self.restore_stat()
 
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
@@ -369,7 +379,7 @@ class YFOptimizer(object):
 
 
   def get_lr(self):
-    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps)
+    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / self._h_min
     return
 
 
@@ -382,7 +392,7 @@ class YFOptimizer(object):
     # We use the Vieta's substution to compute the root.
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
-    p = self._dist_to_opt**2 * (self._h_min + eps)**2 / 2 / self._grad_var
+    p = self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var
 
     logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
 
