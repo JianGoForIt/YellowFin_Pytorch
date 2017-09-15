@@ -3,10 +3,11 @@ import numpy as np
 import torch
 import logging
 
-logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_no_backup_09_15.log',level=logging.DEBUG)
+logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_no_backup_09_15_3.log',level=logging.DEBUG)
 logging.debug('This message should go to the log file')
 
 eps = 1e-15
+DEBUG = True
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
@@ -41,9 +42,6 @@ class YFOptimizer(object):
       Example on using lr_factor can be found here:
       https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109
     '''
-
-    print "start working on it"
-
     self._lr = lr
     self._mu = mu
     # we convert var_list from generator to list so that
@@ -64,11 +62,6 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
-
-    # for backup statistics in case of numerical instability
-    self._global_state_backup = None
-    self._mu_t_backup = None
-    self._lr_t_backup = None
 
 
   def state_dict(self):
@@ -119,25 +112,25 @@ class YFOptimizer(object):
     return
 
 
-  def backup_stat(self):
-    # in case of numerical issues, we restore the 
-    # statistics to the latest valid value
-    self._global_state_backup = self._global_state.copy()
-    self._mu_t_backup = self._mu_t
-    self._lr_t_backup = self._lr_t
-    return
+  # def backup_stat(self):
+  #   # in case of numerical issues, we restore the 
+  #   # statistics to the latest valid value
+  #   self._global_state_backup = self._global_state.copy()
+  #   self._mu_t_backup = self._mu_t
+  #   self._lr_t_backup = self._lr_t
+  #   return
 
 
-  def restore_stat(self):
-    # restore statistic to eliminate the influence
-    # of numerical issues
-    if self._global_state_backup is not None:
-      self._global_state = self._global_state_backup.copy()
-    if self._mu_t_backup is not None:
-      self._mu_t = self._mu_t_backup
-    if self._lr_t_backup is not None:
-      self._lr_t = self._lr_t_backup
-    return
+  # def restore_stat(self):
+  #   # restore statistic to eliminate the influence
+  #   # of numerical issues
+  #   if self._global_state_backup is not None:
+  #     self._global_state = self._global_state_backup.copy()
+  #   if self._mu_t_backup is not None:
+  #     self._mu_t = self._mu_t_backup
+  #   if self._lr_t_backup is not None:
+  #     self._lr_t = self._lr_t_backup
+  #   return
 
 
   def set_lr_factor(self, factor):
@@ -198,10 +191,8 @@ class YFOptimizer(object):
     # prevent numerical issue
     self._h_max = min(max(self._h_max, eps), 1.0 / eps)
     self._h_min = min(max(self._h_min, eps), 1.0 / eps)
-
-
-    logging.debug("sparsity %.2E, %.2E", self._sparsity_avg, np.log(self._sparsity_avg) / np.log(10.0) )
-
+    if DEBUG:
+      logging.debug("sparsity %.2E, %.2E", self._sparsity_avg, np.log(self._sparsity_avg) / np.log(10.0) )
     return
 
 
@@ -294,7 +285,8 @@ class YFOptimizer(object):
     # certain number of iterations. Not necessary for basic use.
     
     # DEBUG: not suppose to use at this place
-    assert 0
+    if DEBUG:
+      assert 0
 
     global_state = self._global_state
     beta = self._beta
@@ -333,8 +325,9 @@ class YFOptimizer(object):
         grad = p.grad.data
         global_state['grad_norm_squared'] += torch.sum(grad * grad)
 
-    logging.debug("Iteration  %f", self._iter) 
-    logging.debug("grad norm squared %.2E, %.2E", global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10) )
+    if DEBUG:
+      logging.debug("Iteration  %f", self._iter) 
+      logging.debug("grad norm squared %.2E, %.2E", global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10) )
 
         
     global_state['grad_norm_squared_avg'] = \
@@ -347,34 +340,33 @@ class YFOptimizer(object):
     self.grad_variance()
     self.dist_to_opt()
 
-
-    logging.debug("h_min %.2E, %.2E", self._h_min, np.log(self._h_min) )
-    logging.debug("dist %.2E, %.2E", self._dist_to_opt, np.log(self._dist_to_opt) )
-    logging.debug("var %.2E, %.2E", self._grad_var, np.log(self._grad_var) )
+    if DEBUG:
+      logging.debug("h_min %.2E, %.2E", self._h_min, np.log(self._h_min) )
+      logging.debug("dist %.2E, %.2E", self._dist_to_opt, np.log(self._dist_to_opt) )
+      logging.debug("var %.2E, %.2E", self._grad_var, np.log(self._grad_var) )
 
 
     if self._iter > 0:
-      # try:
-      self.get_mu()    
-      self.get_lr()
+      try:
+        self.get_mu()    
+        self.get_lr()
 
-      logging.debug("lr_t %.2E", self._lr_t) 
-      logging.debug("mu_t %.2E", self._mu_t)
+        if DEBUG:
+          logging.debug("lr_t %.2E", self._lr_t) 
+          logging.debug("mu_t %.2E", self._mu_t)
 
-
-      #   self.backup_stat()
-      # except:
-      #   # restore statistics if numerical issue happens in the cubic solver
-      #   logging.warning("Numerical instability inside cubic root solver!")
-      #   self.restore_stat()
+        self.backup_stat_and_model()
+      except:
+        # restore statistics if numerical issue happens in the cubic solver
+        logging.warning("Numerical instability inside cubic root solver!")
+        self.restore_stat_and_model()
 
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
 
-      logging.debug("lr %.2E", self._lr)
-      logging.debug("mu %.2E", self._mu)
-
-
+      if DEBUG:
+        logging.debug("lr %.2E", self._lr)
+        logging.debug("mu %.2E", self._mu)
     return
 
 
@@ -393,23 +385,23 @@ class YFOptimizer(object):
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
     p = self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var
-
-    logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
+    if DEBUG:
+      logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
 
     w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
 
-
-    logging.debug("w3 %.2E %.2E", w3, np.log(w3) / np.log(10) )
-
+    if DEBUG:
+      logging.debug("w3 %.2E %.2E", w3, np.log(w3) / np.log(10) )
 
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
     
-    logging.debug("w %.2E %.2E", w, np.log(w) / np.log(10) )
+    if DEBUG:
+      logging.debug("w %.2E %.2E", w, np.log(w) / np.log(10) )
 
     y = w - p / 3.0 / w
 
-    logging.debug("y %.2E %.2E %.2E", y, np.log(y) / np.log(10), p/3.0/w)
-
+    if DEBUG:
+      logging.debug("y %.2E %.2E %.2E", y, np.log(y) / np.log(10), p/3.0/w)
 
     x = y + 1
     return x
