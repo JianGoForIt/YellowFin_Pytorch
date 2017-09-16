@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import logging
 
-logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_no_backup_09_15_3.log',level=logging.DEBUG)
+logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_backup_09_15_large_lr_issue.log',level=logging.DEBUG)
 logging.debug('This message should go to the log file')
 
 eps = 1e-15
@@ -12,7 +12,7 @@ DEBUG = True
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step_after_iter=None):
+    auto_clip_fac=None, force_non_inc_step_after_iter=None, model_stat_backup_int=None):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -34,6 +34,7 @@ class YFOptimizer(object):
       force_non_inc_step_after_iter: in some rare cases, it is necessary to force ||lr * gradient||
       to be non-increasing for stableness after some iterations. 
       Default is turning off this feature.
+      model_stat_backup_int: interval to do model and statistics backup in case of numerical issues
     Other features:
       If you want to manually control the learning rates, self.lr_factor is
       an interface to the outside, it is an multiplier for the internal learning rate
@@ -62,6 +63,14 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
+
+    # for backup and restore statistics and models in case numerical issue
+    self._model_stat_backup_int = model_stat_backup_int
+    self._state_backup = None
+    self._mu_t_backup = None
+    self._lr_t_backup = None
+    self._mu_backup = None
+    self._lr_backup = None
 
 
   def state_dict(self):
@@ -112,25 +121,29 @@ class YFOptimizer(object):
     return
 
 
-  # def backup_stat(self):
-  #   # in case of numerical issues, we restore the 
-  #   # statistics to the latest valid value
-  #   self._global_state_backup = self._global_state.copy()
-  #   self._mu_t_backup = self._mu_t
-  #   self._lr_t_backup = self._lr_t
-  #   return
+  def backup_stat_and_model(self):
+    # in case of numerical issues, we restore the 
+    # statistics to the latest valid value
+    self._state_backup = self.state_dict().deepcopy()
+    self._mu_t_backup = self._mu_t
+    self._lr_t_backup = self._lr_t
+    self._mu_backup = self._mu
+    self._lr_backup = self._lr
+    return
 
 
-  # def restore_stat(self):
-  #   # restore statistic to eliminate the influence
-  #   # of numerical issues
-  #   if self._global_state_backup is not None:
-  #     self._global_state = self._global_state_backup.copy()
-  #   if self._mu_t_backup is not None:
-  #     self._mu_t = self._mu_t_backup
-  #   if self._lr_t_backup is not None:
-  #     self._lr_t = self._lr_t_backup
-  #   return
+  def restore_stat_and_model(self):
+    # restore statistic to eliminate the influence
+    # of numerical issues
+    if self._state_backup is not None:
+      self.load_state_dict(self._state_backup)
+    if self._mu_t_backup is not None:
+      self._mu_t = self._mu_t_backup
+    if self._lr_t_backup is not None:
+      self._lr_t = self._lr_t_backup
+    self._mu = self._mu_backup
+    self._lr = self._lr_backup
+    return
 
 
   def set_lr_factor(self, factor):
@@ -188,9 +201,9 @@ class YFOptimizer(object):
       self._h_min *= self._sparsity_avg
       self._h_max *= self._sparsity_avg
 
-    # prevent numerical issue
-    self._h_max = min(max(self._h_max, eps), 1.0 / eps)
-    self._h_min = min(max(self._h_min, eps), 1.0 / eps)
+    # # prevent numerical issue
+    # self._h_max = min(max(self._h_max, eps), 1.0 / eps)
+    # self._h_min = min(max(self._h_min, eps), 1.0 / eps)
     if DEBUG:
       logging.debug("sparsity %.2E, %.2E", self._sparsity_avg, np.log(self._sparsity_avg) / np.log(10.0) )
     return
@@ -225,8 +238,8 @@ class YFOptimizer(object):
     if self._sparsity_debias:
       self._grad_var *= self._sparsity_avg
 
-    # prevent numerical issue
-    self._grad_var = min(max(self._grad_var, eps), 1.0 / eps)
+    # # prevent numerical issue
+    # self._grad_var = min(max(self._grad_var, eps), 1.0 / eps)
     return
 
 
@@ -240,17 +253,17 @@ class YFOptimizer(object):
       global_state["grad_norm_avg"] * beta + (1 - beta) * math.sqrt(global_state["grad_norm_squared"] )
     global_state["dist_to_opt_avg"] = \
       global_state["dist_to_opt_avg"] * beta \
-      + (1 - beta) * global_state["grad_norm_avg"] / global_state['grad_norm_squared_avg']
+      + (1 - beta) * global_state["grad_norm_avg"] / (global_state['grad_norm_squared_avg'] + eps)
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
       self._dist_to_opt = global_state["dist_to_opt_avg"] / debias_factor
     else:
       self._dist_to_opt = global_state["dist_to_opt_avg"]
     if self._sparsity_debias:
-      self._dist_to_opt /= np.sqrt(self._sparsity_avg)
+      self._dist_to_opt /= (np.sqrt(self._sparsity_avg) + eps)
 
-    # prevent numerical issue
-    self._dist_to_opt = min(max(self._dist_to_opt, eps), 1.0 / eps)
+    # # prevent numerical issue
+    # self._dist_to_opt = min(max(self._dist_to_opt, eps), 1.0 / eps)
     return
 
 
@@ -275,8 +288,8 @@ class YFOptimizer(object):
     self._sparsity_avg = \
       global_state["sparsity_avg"] / self.zero_debias_factor()
 
-    # prevent numerical issue
-    self._sparsity_avg = min(max(self._sparsity_avg, eps), 1.0 / eps)
+    # # prevent numerical issue
+    # self._sparsity_avg = min(max(self._sparsity_avg, eps), 1.0 / eps)
     return
 
 
@@ -328,7 +341,6 @@ class YFOptimizer(object):
     if DEBUG:
       logging.debug("Iteration  %f", self._iter) 
       logging.debug("grad norm squared %.2E, %.2E", global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10) )
-
         
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
@@ -345,24 +357,29 @@ class YFOptimizer(object):
       logging.debug("dist %.2E, %.2E", self._dist_to_opt, np.log(self._dist_to_opt) )
       logging.debug("var %.2E, %.2E", self._grad_var, np.log(self._grad_var) )
 
-
     if self._iter > 0:
-      try:
-        self.get_mu()    
-        self.get_lr()
+      # try:
+      self.get_mu()    
+      self.get_lr()
 
-        if DEBUG:
-          logging.debug("lr_t %.2E", self._lr_t) 
-          logging.debug("mu_t %.2E", self._mu_t)
+      if DEBUG:
+        logging.debug("lr_t %.2E", self._lr_t) 
+        logging.debug("mu_t %.2E", self._mu_t)
 
-        self.backup_stat_and_model()
-      except:
+      #   if self._model_stat_backup_int is not None \
+      #     and (self._iter == 1 or self._iter % self._model_stat_backup_int == 0):
+      #     self.backup_stat_and_model()
+      # except:
         # restore statistics if numerical issue happens in the cubic solver
-        logging.warning("Numerical instability inside cubic root solver!")
-        self.restore_stat_and_model()
+        # logging.warning("Numerical instability inside cubic root solver!")
+        # self.restore_stat_and_model()
 
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
+
+      # # for DEBUG: simulate the error circumanstance 
+      # if self._iter == 150:
+      #   self._lr = 1e50
 
       if DEBUG:
         logging.debug("lr %.2E", self._lr)
@@ -371,7 +388,7 @@ class YFOptimizer(object):
 
 
   def get_lr(self):
-    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / self._h_min
+    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps)
     return
 
 
@@ -384,7 +401,7 @@ class YFOptimizer(object):
     # We use the Vieta's substution to compute the root.
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
-    p = self._dist_to_opt**2 * self._h_min**2 / 2 / self._grad_var
+    p = self._dist_to_opt**2 * self._h_min**2 / 2 / (self._grad_var + eps)
     if DEBUG:
       logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
 
@@ -398,7 +415,7 @@ class YFOptimizer(object):
     if DEBUG:
       logging.debug("w %.2E %.2E", w, np.log(w) / np.log(10) )
 
-    y = w - p / 3.0 / w
+    y = w - p / 3.0 / (w + eps)
 
     if DEBUG:
       logging.debug("y %.2E %.2E %.2E", y, np.log(y) / np.log(10), p/3.0/w)
