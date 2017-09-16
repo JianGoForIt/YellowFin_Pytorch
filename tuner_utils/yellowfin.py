@@ -3,7 +3,8 @@ import numpy as np
 import torch
 import logging
 
-# logging.basicConfig(filename='09_15_mu_0_all_eps_1e-15_init_range_0.5.log',level=logging.DEBUG)
+import sys
+logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
 logging.debug('This message should go to the log file')
 
 eps = 1e-15
