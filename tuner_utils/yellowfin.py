@@ -402,7 +402,7 @@ class YFOptimizer(object):
     # We use the Vieta's substution to compute the root.
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
-    p = self._dist_to_opt**2 * (self._h_min + eps)**2 / 2 / (self._grad_var + eps)
+    p = (self._dist_to_opt + eps)**2 * (self._h_min + eps)**2 / 2 / (self._grad_var + eps)
     if DEBUG:
       logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
 
