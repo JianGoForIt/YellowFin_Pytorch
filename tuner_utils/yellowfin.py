@@ -3,7 +3,7 @@ import numpy as np
 import torch
 import logging
 
-logging.basicConfig(filename='catch_nan_eps_1e-15_mu_0_backup_09_15_large_lr_issue.log',level=logging.DEBUG)
+logging.basicConfig(filename='09_15_mu_0_all_eps_1e-15_init_range_0.01.log',level=logging.DEBUG)
 logging.debug('This message should go to the log file')
 
 eps = 1e-15
@@ -401,7 +401,7 @@ class YFOptimizer(object):
     # We use the Vieta's substution to compute the root.
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
-    p = self._dist_to_opt**2 * self._h_min**2 / 2 / (self._grad_var + eps)
+    p = self._dist_to_opt**2 * (self._h_min + eps)**2 / 2 / (self._grad_var + eps)
     if DEBUG:
       logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
 
