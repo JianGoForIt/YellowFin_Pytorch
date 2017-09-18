@@ -1,14 +1,8 @@
 import math
 import numpy as np
 import torch
-import logging
-
-import sys
-logging.basicConfig(stream=sys.stdout,level=logging.DEBUG)
-logging.debug('This message should go to the log file')
 
 eps = 1e-15
-DEBUG = True
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
@@ -201,12 +195,6 @@ class YFOptimizer(object):
     if self._sparsity_debias:
       self._h_min *= self._sparsity_avg
       self._h_max *= self._sparsity_avg
-
-    # # prevent numerical issue
-    # self._h_max = min(max(self._h_max, eps), 1.0 / eps)
-    # self._h_min = min(max(self._h_min, eps), 1.0 / eps)
-    if DEBUG:
-      logging.debug("sparsity %.2E, %.2E", self._sparsity_avg, np.log(self._sparsity_avg) / np.log(10.0) )
     return
 
 
@@ -238,9 +226,6 @@ class YFOptimizer(object):
     self._grad_var = max(self._grad_var, eps)
     if self._sparsity_debias:
       self._grad_var *= self._sparsity_avg
-
-    # # prevent numerical issue
-    # self._grad_var = min(max(self._grad_var, eps), 1.0 / eps)
     return
 
 
@@ -262,9 +247,6 @@ class YFOptimizer(object):
       self._dist_to_opt = global_state["dist_to_opt_avg"]
     if self._sparsity_debias:
       self._dist_to_opt /= (np.sqrt(self._sparsity_avg) + eps)
-
-    # # prevent numerical issue
-    # self._dist_to_opt = min(max(self._dist_to_opt, eps), 1.0 / eps)
     return
 
 
@@ -288,20 +270,12 @@ class YFOptimizer(object):
       + (1 - beta) * non_zero_cnt / float(all_entry_cnt)
     self._sparsity_avg = \
       global_state["sparsity_avg"] / self.zero_debias_factor()
-
-    # # prevent numerical issue
-    # self._sparsity_avg = min(max(self._sparsity_avg, eps), 1.0 / eps)
     return
 
 
   def lr_grad_norm_avg(self):
     # this is for enforcing non-increasing lr * grad_norm after 
     # certain number of iterations. Not necessary for basic use.
-    
-    # DEBUG: not suppose to use at this place
-    if DEBUG:
-      assert 0
-
     global_state = self._global_state
     beta = self._beta
     if "lr_grad_norm_avg" not in global_state:
@@ -338,10 +312,6 @@ class YFOptimizer(object):
           continue
         grad = p.grad.data
         global_state['grad_norm_squared'] += torch.sum(grad * grad)
-
-    if DEBUG:
-      logging.debug("Iteration  %f", self._iter) 
-      logging.debug("grad norm squared %.2E, %.2E", global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10) )
         
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
@@ -353,38 +323,12 @@ class YFOptimizer(object):
     self.grad_variance()
     self.dist_to_opt()
 
-    if DEBUG:
-      logging.debug("h_min %.2E, %.2E", self._h_min, np.log(self._h_min) )
-      logging.debug("dist %.2E, %.2E", self._dist_to_opt, np.log(self._dist_to_opt) )
-      logging.debug("var %.2E, %.2E", self._grad_var, np.log(self._grad_var) )
-
     if self._iter > 0:
-      # try:
       self.get_mu()    
       self.get_lr()
 
-      if DEBUG:
-        logging.debug("lr_t %.2E", self._lr_t) 
-        logging.debug("mu_t %.2E", self._mu_t)
-
-      #   if self._model_stat_backup_int is not None \
-      #     and (self._iter == 1 or self._iter % self._model_stat_backup_int == 0):
-      #     self.backup_stat_and_model()
-      # except:
-        # restore statistics if numerical issue happens in the cubic solver
-        # logging.warning("Numerical instability inside cubic root solver!")
-        # self.restore_stat_and_model()
-
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
-
-      # # for DEBUG: simulate the error circumanstance 
-      # if self._iter == 150:
-      #   self._lr = 1e50
-
-      if DEBUG:
-        logging.debug("lr %.2E", self._lr)
-        logging.debug("mu %.2E", self._mu)
     return
 
 
@@ -403,24 +347,9 @@ class YFOptimizer(object):
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
     p = (self._dist_to_opt + eps)**2 * (self._h_min + eps)**2 / 2 / (self._grad_var + eps)
-    if DEBUG:
-      logging.debug("p %.2E %.2E", p, np.log(p) / np.log(10) )
-
     w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
-
-    if DEBUG:
-      logging.debug("w3 %.2E %.2E", w3, np.log(w3) / np.log(10) )
-
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
-    
-    if DEBUG:
-      logging.debug("w %.2E %.2E", w, np.log(w) / np.log(10) )
-
     y = w - p / 3.0 / (w + eps)
-
-    if DEBUG:
-      logging.debug("y %.2E %.2E %.2E", y, np.log(y) / np.log(10), p/3.0/w)
-
     x = y + 1
     return x
 
