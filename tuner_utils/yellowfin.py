@@ -314,6 +314,7 @@ class YFOptimizer(object):
     # We use the Vieta's substution to compute the root.
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
+    # eps in the numerator is to prevent momentum = 1 in case of zero gradient
     p = (self._dist_to_opt + eps)**2 * (self._h_min + eps)**2 / 2 / (self._grad_var + eps)
     w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
