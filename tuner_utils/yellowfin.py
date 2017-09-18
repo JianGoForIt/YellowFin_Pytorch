@@ -334,7 +334,7 @@ class YFOptimizer(object):
       group['momentum'] = self._mu
       if self._force_non_inc_step == False:
         group['lr'] = self._lr * self._lr_factor
-      else:
+      elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
         # in YFOptimizer.__init__ for more details
