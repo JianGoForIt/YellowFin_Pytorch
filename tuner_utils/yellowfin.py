@@ -28,8 +28,9 @@ class YFOptimizer(object):
       delta_mu: for extensions. Not necessary in the basic use. 
       force_non_inc_step: in some very rare cases, it is necessary to force ||lr * gradient||
       to be not increasing dramatically for stableness after some iterations. 
-      In practice, if turned on, we enforce ||lr * grad|| to be less than 2x of the minimal 
-      of smoothed historical value of || lr * grad ||. Default is turning off this feature.
+      In practice, if turned on, we enforce lr * sqrt(smoothed ||grad||^2) 
+      to be less than 2x of the minimal value of historical value on smoothed || lr * grad ||. 
+      This feature is turned off by default.
     Other features:
       If you want to manually control the learning rates, self.lr_factor is
       an interface to the outside, it is an multiplier for the internal learning rate
@@ -241,30 +242,28 @@ class YFOptimizer(object):
 
 
   def lr_grad_norm_avg(self):
-    # this is for enforcing non-increasing lr * grad_norm after 
-    # certain number of iterations. Not necessary for basic use.
+    # this is for enforcing lr * grad_norm not 
+    # increasing dramatically in case of instability.
+    #  Not necessary for basic use.
     global_state = self._global_state
     beta = self._beta
     if "lr_grad_norm_avg" not in global_state:
       global_state['grad_norm_squared_avg_log'] = 0.0
     global_state['grad_norm_squared_avg_log'] = \
-      global_state['grad_norm_squared_avg_log'] * beta + (1 - beta) * np.log(global_state['grad_norm_squared'] + eps)
+      global_state['grad_norm_squared_avg_log'] * beta \
+      + (1 - beta) * np.log(global_state['grad_norm_squared'] + eps)
     if "lr_grad_norm_avg" not in global_state:
       global_state["lr_grad_norm_avg"] = \
-        0.0 * beta + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] + eps) )
+        0.0 * beta + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] ) + eps)
+      # we monitor the minimal smoothed ||lr * grad||
+      global_state["lr_grad_norm_avg_min"] = \
+        np.exp(global_state["lr_grad_norm_avg"] / self.zero_debias_factor() )
     else:
-      undebias_val = global_state["lr_grad_norm_avg"] * beta \
-        + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] + eps) )
-      debias_factor = self.zero_debias_factor()
-      debias_factor_prev = self.zero_debias_factor_delay(1)
-      prev_val = global_state["lr_grad_norm_avg"] / debias_factor_prev
-      val = undebias_val / debias_factor
-      if prev_val > val:
-        global_state["lr_grad_norm_avg"] = undebias_val
-      else:
-        global_state["lr_grad_norm_avg"] = prev_val * debias_factor
-      # DEBUG
-      # print global_state["lr_grad_norm_avg"]
+      global_state["lr_grad_norm_avg"] = global_state["lr_grad_norm_avg"] * beta \
+        + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] ) + eps)
+      global_state["lr_grad_norm_avg_min"] = \
+        min(global_state["lr_grad_norm_avg_min"], 
+            np.exp(global_state["lr_grad_norm_avg"] / self.zero_debias_factor() ) )
 
 
   def after_apply(self):
@@ -336,13 +335,13 @@ class YFOptimizer(object):
       if self._force_non_inc_step == False:
         group['lr'] = self._lr * self._lr_factor
       else:
-        # for the learning rate we force to guarantee 
-        # lr * grad_norm is non-increasing. 
-        # self._force_non_inc_step Not necessary for basic use.
+        # force to guarantee lr * grad_norm not increasing dramatically. 
+        # Not necessary for basic use. Please refer to the comments
+        # in YFOptimizer.__init__ for more details
         self.lr_grad_norm_avg()
         debias_factor = self.zero_debias_factor()
         group['lr'] = min(self._lr * self._lr_factor,
-          np.exp(self._global_state["lr_grad_norm_avg"] / debias_factor) \
+          2.0 * self._global_state["lr_grad_norm_avg_min"] \
           / np.sqrt(np.exp(self._global_state['grad_norm_squared_avg_log'] / debias_factor) ) )
     return
 
