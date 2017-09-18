@@ -2,6 +2,7 @@ import math
 import numpy as np
 import torch
 
+# eps for numerical stability
 eps = 1e-15
 
 class YFOptimizer(object):
