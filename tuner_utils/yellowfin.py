@@ -140,7 +140,6 @@ class YFOptimizer(object):
     curv_win = global_state["curv_win"]
     grad_norm_squared = self._global_state["grad_norm_squared"]
     curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared + eps)
-    # curv_win[self._iter % self._curv_win_width] = grad_norm_squared
     valid_end = min(self._curv_win_width, self._iter + 1)
     # we use running average over log scale, accelerating 
     # h_max / min in the begining to follow the varying trend of curvature.
