@@ -7,7 +7,7 @@ eps = 1e-15
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step_after_iter=None, model_stat_backup_int=None):
+    auto_clip_fac=None, force_non_inc_step_after_iter=None):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -29,7 +29,6 @@ class YFOptimizer(object):
       force_non_inc_step_after_iter: in some rare cases, it is necessary to force ||lr * gradient||
       to be non-increasing for stableness after some iterations. 
       Default is turning off this feature.
-      model_stat_backup_int: interval to do model and statistics backup in case of numerical issues
     Other features:
       If you want to manually control the learning rates, self.lr_factor is
       an interface to the outside, it is an multiplier for the internal learning rate
@@ -58,14 +57,6 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
-
-    # for backup and restore statistics and models in case numerical issue
-    self._model_stat_backup_int = model_stat_backup_int
-    self._state_backup = None
-    self._mu_t_backup = None
-    self._lr_t_backup = None
-    self._mu_backup = None
-    self._lr_backup = None
 
 
   def state_dict(self):
@@ -113,31 +104,6 @@ class YFOptimizer(object):
     self._zero_debias = state_dict['zero_debias']
     self._h_min = state_dict["h_min"]
     self._h_max = state_dict["h_max"]
-    return
-
-
-  def backup_stat_and_model(self):
-    # in case of numerical issues, we restore the 
-    # statistics to the latest valid value
-    self._state_backup = self.state_dict().deepcopy()
-    self._mu_t_backup = self._mu_t
-    self._lr_t_backup = self._lr_t
-    self._mu_backup = self._mu
-    self._lr_backup = self._lr
-    return
-
-
-  def restore_stat_and_model(self):
-    # restore statistic to eliminate the influence
-    # of numerical issues
-    if self._state_backup is not None:
-      self.load_state_dict(self._state_backup)
-    if self._mu_t_backup is not None:
-      self._mu_t = self._mu_t_backup
-    if self._lr_t_backup is not None:
-      self._lr_t = self._lr_t_backup
-    self._mu = self._mu_backup
-    self._lr = self._lr_backup
     return
 
 
