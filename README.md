@@ -15,7 +15,7 @@ For more usage details, please refer to the inline documentation of ```tuner_uti
 
 **[2017.07.28] Switched to logrithmic smoothing to accelerate adaptation to curvature range trends.**
 
-**[2017.08.01] Added optional feature to enforce non-increasing value of lr * gradient norm for stableness in some rare cases.**
+**[2017.08.01] Added optional feature to enforce non-increasing value of lr * gradient norm for stablity in some rare cases.**
 
 **[2017.08.05] Added feature to correct estimation bias from sparse gradient.**
 
