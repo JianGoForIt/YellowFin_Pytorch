@@ -14,19 +14,19 @@ import argparse
 parser = argparse.ArgumentParser(description='PyTorch test with the model from Sen')
 parser.add_argument("--seed", type=int, default=1)
 parser.add_argument("--nhidden", type=int, default=50)
-parser.add_argument("--use_lstm", type=bool, default=False)
+parser.add_argument("--use_lstm", action="store_true")
 parser.add_argument("--init_range", type=float, default=0.1)
-parser.add_argument("--use_cuda", type=bool, default=False)
+parser.add_argument("--use_cuda", action="store_true")
 parser.add_argument("--log_dir", type=str, default="./results/test")
 args = parser.parse_args()
-
+print("args use cuda ", args.use_cuda)
 
 # Set the random seed manually for reproducibility.
 print("using seed ", args.seed)
 np.random.seed(args.seed)
 torch.manual_seed(args.seed)
 if torch.cuda.is_available():
-    if not args.cuda:
+    if not args.use_cuda:
         print("WARNING: You have a CUDA device, so you should probably run with --cuda")
     else:
         torch.cuda.manual_seed(args.seed)
@@ -113,9 +113,9 @@ mix_softmax = MixtureSoftmax(batch_size=batch_size, word_gru_hidden = args.nhidd
 
 
 # In[8]:
-
-# word_attn.cuda()
-# mix_softmax.cuda()
+if use_cuda:
+    word_attn.cuda()
+    mix_softmax.cuda()
 
 
 # In[9]:
@@ -138,9 +138,9 @@ criterion = nn.MultiLabelSoftMarginLoss(size_average=True)
 
 
 # In[11]:
-if use_cuda:
-    word_attn.cuda()
-    mix_softmax.cuda()
+#if use_cuda:
+#    word_attn.cuda()
+#    mix_softmax.cuda()
 
 
 # In[12]:
@@ -269,9 +269,9 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
             loss, grad_norm_250 = train_data(tokens, features, labels, word_attn_model, sent_attn_model, optimizer, loss_criterion, cuda=use_cuda)
             loss_s, gn_s = loss, grad_norm_250
     #             print loss
-            acc = test_accuracy_mini_batch(tokens, features, labels, word_attn_model, sent_attn_model)
-            accuracy_full.append(acc)
-            accuracy_epoch.append(acc)
+            #acc = test_accuracy_mini_batch(tokens, features, labels, word_attn_model, sent_attn_model)
+            #accuracy_full.append(acc)
+            #accuracy_epoch.append(acc)
             loss_full.append(loss)
             loss_epoch.append(loss)
             
@@ -310,9 +310,11 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
             
 #             print "optimizer", optimizer._lr, optimizer._mu, #optimizer._h_min, optimizer._h_max, optimizer._dist_to_opt, optimizer._grad_var, loss
 #             print loss every n passes
-            if i % print_loss_every == 0:
-                print 'Loss at %d minibatches, %d epoch,(%s) is %f' %(i, epoch_counter, timeSince(start), np.mean(loss_epoch))
-                print 'Accuracy at %d minibatches is %f' % (i, np.mean(accuracy_epoch))
+            
+
+            #if i % print_loss_every == 0:
+            #    print 'Loss at %d minibatches, %d epoch,(%s) is %f' %(i, epoch_counter, timeSince(start), np.mean(loss_epoch))
+            #    print 'Accuracy at %d minibatches is %f' % (i, np.mean(accuracy_epoch))
         except StopIteration:
             epoch_counter += 1
             print 'Reached %d epocs' % epoch_counter
@@ -323,7 +325,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
 #             print "word_optimizer", word_optmizer._lr, word_optmizer._mu, word_optmizer._h_min, word_optmizer._h_max, word_optmizer._dist_to_opt, word_optmizer._grad_var
 #             print "mix_optimizer", mix_optimizer._lr, mix_optimizer._mu, mix_optimizer._h_min, mix_optimizer._h_max, mix_optimizer._dist_to_opt, mix_optimizer._grad_var
 #             print loss_epoch
-            p = test_accuracy_full_batch(X_test, X_test_feature, mini_batch_size, word_attn_model, sent_attn_model)
+            #p = test_accuracy_full_batch(X_test, X_test_feature, mini_batch_size, word_attn_model, sent_attn_model)
 #             print p
 #             print len(p)
 #             p = np.ravel(p)

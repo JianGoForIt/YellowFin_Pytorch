@@ -142,9 +142,11 @@ class MixtureSoftmax(nn.Module):
 def train_data(mini_batch, feature_batch, targets, word_attn_model, mix_softmax, optimizer, criterion, do_step=True, cuda=False):
     state_word = word_attn_model.init_hidden()
     optimizer.zero_grad()
-    
+   
+    #print("inside cuda", cuda)
+ 
     if cuda:
-        state_word.cuda()
+        state_word = state_word.cuda()
         mini_batch[0] = mini_batch[0].cuda()
         mini_batch[1] = mini_batch[1].cuda()
         feature_batch = feature_batch.cuda()
