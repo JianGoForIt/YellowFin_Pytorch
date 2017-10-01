@@ -3,7 +3,12 @@ import numpy as np
 import torch
 
 # eps for numerical stability
+DEBUG = True
 eps = 1e-15
+
+if DEBUG:
+  import logging
+
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
@@ -60,6 +65,10 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
+
+    if DEBUG:
+      logging.debug('This message should go to the log file')
+
 
 
   def state_dict(self):
@@ -170,13 +179,12 @@ class YFOptimizer(object):
     global_state = self._global_state
     beta = self._beta
     self._grad_var = np.array(0.0, dtype=np.float32)
-    for group in self._optimizer.param_groups:
-      for p in group['params']:
+    for group_id, group in enumerate(self._optimizer.param_groups):
+      for p_id, p in enumerate(group['params'] ):
         if p.grad is None:
           continue
         grad = p.grad.data
         state = self._optimizer.state[p]
-
         if self._iter == 0:
           state["grad_avg"] = grad.new().resize_as_(grad).zero_()
           state["grad_avg_squared"] = 0.0
@@ -274,16 +282,28 @@ class YFOptimizer(object):
       global_state["grad_norm_squared_avg"] = 0.0
 
     global_state["grad_norm_squared"] = 0.0
-    for group in self._optimizer.param_groups:
-      for p in group['params']:
+    for group_id, group in enumerate(self._optimizer.param_groups):
+      for p_id, p in enumerate(group['params'] ):
         if p.grad is None:
           continue
         grad = p.grad.data
-        global_state['grad_norm_squared'] += torch.sum(grad * grad)
+        param_grad_norm_squared = torch.sum(grad * grad)
+        global_state['grad_norm_squared'] += param_grad_norm_squared
+
+        if DEBUG:
+          logging.debug("Iteration  %f", self._iter) 
+          logging.debug("param grad squared gid %d, pid %d, %f, %f", group_id, p_id, param_grad_norm_squared,
+            np.log(param_grad_norm_squared) / np.log(10) )
+
         
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
         
+    if DEBUG:
+      logging.debug("overall grad norm squared %f, %f", 
+        global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10))
+
+
     if self._sparsity_debias:
       self.grad_sparsity()
 
@@ -291,12 +311,25 @@ class YFOptimizer(object):
     self.grad_variance()
     self.dist_to_opt()
 
+    if DEBUG:
+      logging.debug("h_min %f, %f", self._h_min, np.log(self._h_min) )
+      logging.debug("dist %f, %f", self._dist_to_opt, np.log(self._dist_to_opt) )
+      logging.debug("var %f, %f", self._grad_var, np.log(self._grad_var) )
+
+
     if self._iter > 0:
       self.get_mu()    
       self.get_lr()
 
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
+
+      if DEBUG:
+        logging.debug("lr_t %f", self._lr_t) 
+        logging.debug("mu_t %f", self._mu_t)
+        logging.debug("lr %f", self._lr)
+        logging.debug("mu %f", self._mu)
+
     return
 
 
@@ -320,6 +353,12 @@ class YFOptimizer(object):
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
     y = w - p / 3.0 / (w + eps)
     x = y + 1
+
+    if DEBUG:
+      logging.debug("p %f, den %f", p, self._grad_var + eps)
+      logging.debug("w3 %f ", w3)
+      logging.debug("y %f, den %f", y, w + eps)
+
     return x
 
 

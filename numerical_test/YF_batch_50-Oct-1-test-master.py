@@ -18,6 +18,7 @@ parser.add_argument("--use_lstm", action="store_true")
 parser.add_argument("--init_range", type=float, default=0.1)
 parser.add_argument("--use_cuda", action="store_true")
 parser.add_argument("--log_dir", type=str, default="./results/test")
+parser.add_argument("--debug", action="store_true")
 args = parser.parse_args()
 print("args use cuda ", args.use_cuda)
 
@@ -37,6 +38,13 @@ else:
     use_cuda = False
 print("use cuda ", use_cuda)
 
+# regarding logging and debug options
+if not os.path.exists(args.log_dir):
+    os.makedirs(args.log_dir)
+print("debug mode", args.debug)
+if args.debug:
+    import logging
+    logging.basicConfig(filename=args.log_dir + "/num.log",level=logging.DEBUG)
 
 # In[2]:
 
@@ -419,7 +427,7 @@ log_dir = "./09_18_test_master_branch"
 if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
 loss_full = train_early_stopping(batch_size, X_train, X_train_features, Y_marginals, X_test, X_test_feature, word_attn, mix_softmax, optimizer, 
-                                criterion, 100000, 1000, 1000)
+                                criterion, 300000, 1000, 1000)
 
 
 # ##### 
