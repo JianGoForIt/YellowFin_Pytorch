@@ -246,6 +246,10 @@ class YFOptimizer(object):
       + (1 - beta) * non_zero_cnt / float(all_entry_cnt)
     self._sparsity_avg = \
       global_state["sparsity_avg"] / self.zero_debias_factor()
+    
+    if DEBUG:
+      logging.debug("sparsity %f, sparsity avg %f", non_zero_cnt / float(all_entry_cnt), self._sparsity_avg)
+
     return
 
 
