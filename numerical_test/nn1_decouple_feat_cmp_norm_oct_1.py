@@ -67,10 +67,12 @@ class AttentionWordRNN(nn.Module):
         self.embed_size = embed_size
         self.word_gru_hidden = word_gru_hidden
         self.bidirectional = bidirectional
-        
+        self.use_lstm = use_lstm       
+ 
         self.lookup = nn.Embedding(num_tokens, embed_size)
         if bidirectional == True:
             if use_lstm:
+                print("inside using LSTM")
                 self.word_gru = nn.LSTM(embed_size, word_gru_hidden, bidirectional= True)
             else:
                 self.word_gru = nn.GRU(embed_size, word_gru_hidden, bidirectional= True)
@@ -103,9 +105,15 @@ class AttentionWordRNN(nn.Module):
     
     def init_hidden(self):
         if self.bidirectional == True:
-            return Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden))
+            if self.use_lstm == True:
+                return [Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden)), Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden)) ] 
+            else:
+              return Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden))
         else:
-            return Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden))
+            if self.use_lstm == True:
+              return [Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden)), Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden)) ]
+            else:
+              return Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden))
         
 class MixtureSoftmax(nn.Module):
 
@@ -146,7 +154,8 @@ def train_data(mini_batch, feature_batch, targets, word_attn_model, mix_softmax,
     #print("inside cuda", cuda)
  
     if cuda:
-        state_word = state_word.cuda()
+        state_word[0] = state_word[0].cuda()
+        state_word[1] = state_word[1].cuda()
         mini_batch[0] = mini_batch[0].cuda()
         mini_batch[1] = mini_batch[1].cuda()
         feature_batch = feature_batch.cuda()
