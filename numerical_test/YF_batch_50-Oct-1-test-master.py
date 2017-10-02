@@ -423,7 +423,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
 
 # In[15]:
 
-log_dir = "./09_18_test_master_branch"
+log_dir = args.log_dir
 if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
 loss_full = train_early_stopping(batch_size, X_train, X_train_features, Y_marginals, X_test, X_test_feature, word_attn, mix_softmax, optimizer, 
