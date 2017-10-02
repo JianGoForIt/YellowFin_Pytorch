@@ -108,12 +108,12 @@ class AttentionWordRNN(nn.Module):
             if self.use_lstm == True:
                 return [Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden)), Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden)) ] 
             else:
-              return Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden))
+                return Variable(torch.zeros(2, self.batch_size, self.word_gru_hidden))
         else:
             if self.use_lstm == True:
-              return [Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden)), Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden)) ]
+                return [Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden)), Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden)) ]
             else:
-              return Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden))
+                return Variable(torch.zeros(1, self.batch_size, self.word_gru_hidden))
         
 class MixtureSoftmax(nn.Module):
 
@@ -147,15 +147,18 @@ class MixtureSoftmax(nn.Module):
         final_map = self.linear(mixture_input)
         return final_map
 
-def train_data(mini_batch, feature_batch, targets, word_attn_model, mix_softmax, optimizer, criterion, do_step=True, cuda=False):
+def train_data(mini_batch, feature_batch, targets, word_attn_model, mix_softmax, optimizer, criterion, do_step=True, cuda=False, lstm=False):
     state_word = word_attn_model.init_hidden()
     optimizer.zero_grad()
    
     #print("inside cuda", cuda)
  
     if cuda:
-        state_word[0] = state_word[0].cuda()
-        state_word[1] = state_word[1].cuda()
+        if lstm:
+            state_word[0] = state_word[0].cuda()
+            state_word[1] = state_word[1].cuda()
+        else:
+            state_word = state_word.cuda()
         mini_batch[0] = mini_batch[0].cuda()
         mini_batch[1] = mini_batch[1].cuda()
         feature_batch = feature_batch.cuda()

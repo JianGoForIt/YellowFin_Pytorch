@@ -274,7 +274,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
 
 #             optimizer._lr = 0.5
 
-            loss, grad_norm_250 = train_data(tokens, features, labels, word_attn_model, sent_attn_model, optimizer, loss_criterion, cuda=use_cuda)
+            loss, grad_norm_250 = train_data(tokens, features, labels, word_attn_model, sent_attn_model, optimizer, loss_criterion, cuda=use_cuda, lstm=args.use_lstm)
             loss_s, gn_s = loss, grad_norm_250
     #             print loss
             #acc = test_accuracy_mini_batch(tokens, features, labels, word_attn_model, sent_attn_model)
