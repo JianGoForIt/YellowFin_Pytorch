@@ -67,7 +67,7 @@ class YFOptimizer(object):
     self._lr_factor = 1.0
 
     # lr threshold
-    self._lr_thresh = lr_thresh
+    self._lr_grad_norm_thresh = lr_grad_norm_thresh
 
 
     if DEBUG:
@@ -341,7 +341,7 @@ class YFOptimizer(object):
 
 
   def get_lr(self):
-    self._lr_t = min(self._lr_grad_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) ,(1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps) )
+    self._lr_t = min(self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) ,(1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps) )
     return
 
 
