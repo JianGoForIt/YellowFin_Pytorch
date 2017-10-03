@@ -5,7 +5,6 @@ import torch
 # eps for numerical stability
 DEBUG = True
 eps = 1e-6
-LR_THRESH = 1.0
 
 if DEBUG:
   import logging
@@ -14,7 +13,7 @@ if DEBUG:
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=False):
+    auto_clip_fac=None, force_non_inc_step=False, lr_thresh=1.0):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -66,6 +65,9 @@ class YFOptimizer(object):
 
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
+
+    # lr threshold
+    self._lr_thresh = lr_thresh
 
 
     if DEBUG:
@@ -339,7 +341,7 @@ class YFOptimizer(object):
 
 
   def get_lr(self):
-    self._lr_t = min(LR_THRESH ,(1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps) )
+    self._lr_t = min(self._lr_thresh ,(1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps) )
     return
 
 
