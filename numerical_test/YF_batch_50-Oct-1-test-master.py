@@ -19,6 +19,7 @@ parser.add_argument("--init_range", type=float, default=0.1)
 parser.add_argument("--use_cuda", action="store_true")
 parser.add_argument("--log_dir", type=str, default="./results/test")
 parser.add_argument("--debug", action="store_true")
+parser.add_argument("--lr_thresh", type=float, default=1.0)
 args = parser.parse_args()
 print("args use cuda ", args.use_cuda)
 
@@ -135,9 +136,9 @@ sigmoid = nn.Sigmoid()
 # In[10]:
 
 learning_rate = 1.0
-
+print("lr thresh", args.lr_thresh)
 optimizer = YFOptimizer(mix_softmax.parameters(), beta=0.999, lr=learning_rate, mu=0.0, zero_debias=True, clip_thresh=None, 
-                        auto_clip_fac=None, curv_win_width=20, force_non_inc_step=False)
+                        auto_clip_fac=None, curv_win_width=20, force_non_inc_step=False, lr_thresh=args.lr_thresh)
 
 # word_optmizer = YFOptimizer(word_attn.parameters(), lr=learning_rate, mu=0.0, auto_clip_fac=2.0)
 # mix_optimizer = YFOptimizer(mix_softmax.parameters(), lr=learning_rate, mu=0.0, auto_clip_fac=2.0)
