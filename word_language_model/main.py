@@ -13,6 +13,7 @@ import sys
 import os
 sys.path.append("../tuner_utils")
 from yellowfin import YFOptimizer
+import logging
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
 parser.add_argument('--data', type=str, default='./data/penn',
@@ -27,7 +28,7 @@ parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
 parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=0.25,
+parser.add_argument('--clip', type=float, default=5.0,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=40,
                     help='upper epoch limit')
@@ -51,7 +52,12 @@ parser.add_argument('--logdir', type=str, default='.',
                     help='folder for the logs')
 parser.add_argument('--opt_method', type=str, default='YF',
                     help='select the optimizer you are using')
+parser.add_argument('--lr_thresh', type=float, default=1.0)
 args = parser.parse_args()
+
+if not os.path.isdir(args.logdir):
+    os.mkdir(args.logdir)
+logging.basicConfig(filename=args.logdir + "/num.log", level=logging.DEBUG)
 
 # Set the random seed manually for reproducibility.
 torch.manual_seed(args.seed)
@@ -191,7 +197,7 @@ try:
         optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.9)
     elif args.opt_method == "YF":
         print("using YF")
-        optimizer = YFOptimizer(model.parameters(), lr=1.0, mu=0.0)
+        optimizer = YFOptimizer(model.parameters(), lr=1.0, mu=0.0, lr_thresh=args.lr_thresh)
     elif args.opt_method == "Adagrad":
         print("using Adagrad")
         optimizer = torch.optim.Adagrad(model.parameters(), lr)
