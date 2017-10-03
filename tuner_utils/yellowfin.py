@@ -5,6 +5,7 @@ import torch
 # eps for numerical stability
 DEBUG = True
 eps = 1e-6
+LR_THRESH = 1.0
 
 if DEBUG:
   import logging
@@ -66,9 +67,9 @@ class YFOptimizer(object):
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
 
+
     if DEBUG:
       logging.debug('This message should go to the log file')
-
 
 
   def state_dict(self):
@@ -338,7 +339,7 @@ class YFOptimizer(object):
 
 
   def get_lr(self):
-    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps)
+    self._lr_t = min(LR_THRESH ,(1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps) )
     return
 
 
