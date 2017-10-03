@@ -4,7 +4,7 @@ import torch
 
 # eps for numerical stability
 DEBUG = True
-eps = 1e-15
+eps = 1e-6
 
 if DEBUG:
   import logging
