@@ -29,11 +29,24 @@ parser.add_argument('--mu', default=0.0, type=float, help='momentum')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--logdir', type=str, default="./")
 parser.add_argument('--opt_method', type=str, default="YF")
+parser.add_argument('--lr_thresh', type=float, default=1.0)
+parser.add_argument('--seed', type=int, default=1)
 args = parser.parse_args()
+
+import logging
+if not os.path.isdir(args.logdir):
+    os.mkdir(args.logdir)
+logging.basicConfig(filename=args.logdir + "/num.log",level=logging.DEBUG)
 
 use_cuda = torch.cuda.is_available()
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
+
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
 # Data
 print('==> Preparing data..')
@@ -90,7 +103,7 @@ elif args.opt_method == "Adam":
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 elif args.opt_method == "YF":
     print("using YF")
-    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4)
+    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4, lr_thresh=args.lr_thresh)
 else:
     raise Exception("Optimizer not supported")
 # Training
