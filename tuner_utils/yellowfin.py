@@ -13,7 +13,8 @@ if DEBUG:
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0):
+    auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0,
+    h_max_log_smooth=False, h_min_log_smooth=False):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -68,6 +69,10 @@ class YFOptimizer(object):
 
     # lr threshold
     self._lr_grad_norm_thresh = lr_grad_norm_thresh
+
+    # smoothing options
+    self._h_max_log_smooth = h_max_log_smooth
+    self._h_min_log_smooth = h_min_log_smooth
 
 
     if DEBUG:
@@ -151,7 +156,8 @@ class YFOptimizer(object):
       global_state["curv_win"] = torch.FloatTensor(self._curv_win_width, 1).zero_()
     curv_win = global_state["curv_win"]
     grad_norm_squared = self._global_state["grad_norm_squared"]
-    curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared + eps)
+    # curv_win[self._iter % self._curv_win_width] = np.log(grad_norm_squared + eps)
+    curv_win[self._iter % self._curv_win_width] = grad_norm_squared
     valid_end = min(self._curv_win_width, self._iter + 1)
     # we use running average over log scale, accelerating 
     # h_max / min in the begining to follow the varying trend of curvature.
@@ -161,17 +167,37 @@ class YFOptimizer(object):
       global_state["h_max_avg"] = 0.0
       self._h_min = 0.0
       self._h_max = 0.0
-    global_state["h_min_avg"] = \
-      global_state["h_min_avg"] * beta + (1 - beta) * torch.min(curv_win[:valid_end] )
-    global_state["h_max_avg"] = \
-      global_state["h_max_avg"] * beta + (1 - beta) * torch.max(curv_win[:valid_end] )
+    if self._h_min_log_smooth:
+      global_state["h_min_avg"] = \
+        global_state["h_min_avg"] * beta + (1 - beta) * torch.min(np.log(curv_win[:valid_end] + eps) )
+    else:
+      global_state["h_min_avg"] = \
+        global_state["h_min_avg"] * beta + (1 - beta) * torch.min(curv_win[:valid_end] )
+    if self._h_max_log_smooth:
+      global_state["h_max_avg"] = \
+        global_state["h_max_avg"] * beta + (1 - beta) * torch.max(np.log(curv_win[:valid_end] + eps) )
+    else:
+      global_state["h_max_avg"] = \
+        global_state["h_max_avg"] * beta + (1 - beta) * torch.max(curv_win[:valid_end] )
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
-      self._h_min = np.exp(global_state["h_min_avg"] / debias_factor)
-      self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
+      if self._h_min_log_smooth:
+        self._h_min = np.exp(global_state["h_min_avg"] / debias_factor)
+      else:
+        self._h_min = global_state["h_min_avg"] / debias_factor
+      if self._h_max_log_smooth:
+        self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
+      else:
+        self._h_max = global_state["h_max_avg"] / debias_factor
     else:
-      self._h_min = np.exp(global_state["h_min_avg"] )
-      self._h_max = np.exp(global_state["h_max_avg"] )
+      if self._h_min_log_smooth:
+        self._h_min = np.exp(global_state["h_min_avg"] )
+      else:
+        self._h_min = global_state["h_min_avg"]
+      if self._h_max_log_smooth:
+        self._h_max = np.exp(global_state["h_max_avg"] )
+      else:
+        self._h_max = global_state["h_max_avg"]
     if self._sparsity_debias:
       self._h_min *= self._sparsity_avg
       self._h_max *= self._sparsity_avg

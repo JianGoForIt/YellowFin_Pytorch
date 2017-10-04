@@ -176,6 +176,8 @@ def train_data(mini_batch, feature_batch, targets, word_attn_model, mix_softmax,
         y_pred = y_pred.cuda()
         targets = targets.cuda() 
 
+    # print y_pred.size(), targets.size(), "pred", y_pred, "targets", targets
+
     loss = criterion(y_pred, targets)
     loss.backward()
     
