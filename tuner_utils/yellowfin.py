@@ -1,6 +1,7 @@
 import math
 import numpy as np
 import torch
+import copy
 
 # eps for numerical stability
 DEBUG = True
@@ -14,7 +15,7 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0,
-    h_max_log_smooth=False, h_min_log_smooth=False):
+    h_max_log_smooth=False, h_min_log_smooth=False, checkpoint_interval=500):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -74,6 +75,8 @@ class YFOptimizer(object):
     self._h_max_log_smooth = h_max_log_smooth
     self._h_min_log_smooth = h_min_log_smooth
 
+    # checkpoint interval
+    self._checkpoint_interval = checkpoint_interval
 
     if DEBUG:
       logging.debug('This message should go to the log file')
@@ -82,6 +85,9 @@ class YFOptimizer(object):
   def state_dict(self):
     # for checkpoint saving
     sgd_state_dict = self._optimizer.state_dict()
+    # for recover model internally in case of numerical issue
+    model_state_list = [p.data \
+      for group in self._optimizer.param_groups for p in group['params'] ]
     global_state = self._global_state
     lr_factor = self._lr_factor
     iter = self._iter
@@ -96,6 +102,7 @@ class YFOptimizer(object):
 
     return {
       "sgd_state_dict": sgd_state_dict,
+      "model_state_list": model_state_list,
       "global_state": global_state,
       "lr_factor": lr_factor,
       "iter": iter,
@@ -113,6 +120,12 @@ class YFOptimizer(object):
   def load_state_dict(self, state_dict):
     # for checkpoint saving
     self._optimizer.load_state_dict(state_dict['sgd_state_dict'])
+    # for recover model internally if any numerical issue happens
+    param_id = 0
+    for group in self._optimizer.param_groups:
+      for p in group["params"]:
+        p.data = state_dict["model_state_list"][param_id]
+        param_id += 1
     self._global_state = state_dict['global_state']
     self._lr_factor = state_dict['lr_factor']
     self._iter = state_dict['iter']
@@ -307,7 +320,7 @@ class YFOptimizer(object):
             np.exp(global_state["lr_grad_norm_avg"] / self.zero_debias_factor() ) )
 
 
-  def after_apply(self):
+  def before_apply(self):
     # compute running average of gradient and norm of gradient
     beta = self._beta
     global_state = self._global_state
@@ -443,15 +456,25 @@ class YFOptimizer(object):
       # do not clip the first iteration
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
 
-    # apply update
-    self._optimizer.step()
+    try:
+      # before appply
+      self.before_apply()
 
-    # after appply
-    self.after_apply()
+      # update learning rate and momentum
+      self.update_hyper_param()
 
-    # update learning rate and momentum
-    self.update_hyper_param()
+      # apply update
+      self._optimizer.step()
 
-    self._iter += 1
+      # periodically save model and states
+      if self._iter % self._checkpoint_interval == 1:
+        self._state_checkpoint = copy.deepcopy(self.state_dict() )
+
+      self._iter += 1
+    except:
+      # load the last checkpoint
+      logging.warning("Numerical issue triggered restore with backup states. Resumed from last internal checkpoint.")
+      self.load_state_dict(self._state_checkpoint)
+
     return 
 
