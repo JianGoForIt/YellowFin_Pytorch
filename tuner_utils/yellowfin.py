@@ -4,18 +4,13 @@ import torch
 import copy
 
 # eps for numerical stability
-DEBUG = True
 eps = 1e-6
-
-if DEBUG:
-  import logging
-
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0,
-    h_max_log_smooth=False, h_min_log_smooth=False, checkpoint_interval=500):
+    h_max_log_smooth=False, h_min_log_smooth=False, checkpoint_interval=500, verbose=True):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -78,8 +73,9 @@ class YFOptimizer(object):
     # checkpoint interval
     self._checkpoint_interval = checkpoint_interval
 
-    if DEBUG:
-      logging.debug('This message should go to the log file')
+    self._verbose = verbose
+    if self._verbose:
+      logging.debug('Verbose mode with debugging info logged.')
 
 
   def state_dict(self):
@@ -289,7 +285,7 @@ class YFOptimizer(object):
     self._sparsity_avg = \
       global_state["sparsity_avg"] / self.zero_debias_factor()
     
-    if DEBUG:
+    if self._verbose:
       logging.debug("sparsity %f, sparsity avg %f", non_zero_cnt / float(all_entry_cnt), self._sparsity_avg)
 
     return
@@ -336,7 +332,7 @@ class YFOptimizer(object):
         param_grad_norm_squared = torch.sum(grad * grad)
         global_state['grad_norm_squared'] += param_grad_norm_squared
 
-        if DEBUG:
+        if self._verbose:
           logging.debug("Iteration  %f", self._iter) 
           logging.debug("param grad squared gid %d, pid %d, %f, %f", group_id, p_id, param_grad_norm_squared,
             np.log(param_grad_norm_squared) / np.log(10) )
@@ -345,7 +341,7 @@ class YFOptimizer(object):
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
         
-    if DEBUG:
+    if self._verbose:
       logging.debug("overall grad norm squared %f, %f", 
         global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10))
 
@@ -357,11 +353,10 @@ class YFOptimizer(object):
     self.grad_variance()
     self.dist_to_opt()
 
-    if DEBUG:
+    if self._verbose:
       logging.debug("h_min %f, %f", self._h_min, np.log(self._h_min) )
       logging.debug("dist %f, %f", self._dist_to_opt, np.log(self._dist_to_opt) )
       logging.debug("var %f, %f", self._grad_var, np.log(self._grad_var) )
-
 
     if self._iter > 0:
       self.get_mu()    
@@ -370,12 +365,11 @@ class YFOptimizer(object):
       self._lr = beta * self._lr + (1 - beta) * self._lr_t
       self._mu = beta * self._mu + (1 - beta) * self._mu_t
 
-      if DEBUG:
+      if self._verbose:
         logging.debug("lr_t %f", self._lr_t) 
         logging.debug("mu_t %f", self._mu_t)
         logging.debug("lr %f", self._lr)
         logging.debug("mu %f", self._mu)
-
     return
 
 
@@ -394,16 +388,25 @@ class YFOptimizer(object):
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
     # eps in the numerator is to prevent momentum = 1 in case of zero gradient
+    if np.isnan(self._dist_to_opt) or np.isnan(self._h_min) or np.isnan(self._grad_var) \
+      or np.isinf(self._dist_to_opt) or np.isinf(self._h_min) or np.isinf(self._grad_var):
+      logging.warning("Input to cubic solver has invalid nan/inf value!")
+      raise Exception("Input to cubic solver has invalid nan/inf value!")
+
     p = (self._dist_to_opt + eps)**2 * (self._h_min + eps)**2 / 2 / (self._grad_var + eps)
     w3 = (-math.sqrt(p**2 + 4.0 / 27.0 * p**3) - p) / 2.0
     w = math.copysign(1.0, w3) * math.pow(math.fabs(w3), 1.0/3.0)
     y = w - p / 3.0 / (w + eps)
     x = y + 1
 
-    if DEBUG:
-      logging.debug("p %f, den %f", p, self._grad_var + eps)
+    if self._verbose:
+      logging.debug("p %f, denominator %f", p, self._grad_var + eps)
       logging.debug("w3 %f ", w3)
-      logging.debug("y %f, den %f", y, w + eps)
+      logging.debug("y %f, denominator %f", y, w + eps)
+
+    if np.isnan(x) or np.isinf(x):
+      logging.warning("Output from cubic is invalid nan/inf value!")
+      raise Exception("Output from cubic is invalid nan/inf value!")
 
     return x
 
