@@ -341,7 +341,7 @@ class YFOptimizer(object):
 
 
   def get_lr(self):
-    self._lr_t = min(self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) ,(1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps) )
+    self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps)
     return
 
 
@@ -380,7 +380,8 @@ class YFOptimizer(object):
     for group in self._optimizer.param_groups:
       group['momentum'] = self._mu
       if self._force_non_inc_step == False:
-        group['lr'] = self._lr * self._lr_factor
+        group['lr'] = min(self._lr * self._lr_factor, 
+          self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) )
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
@@ -389,7 +390,7 @@ class YFOptimizer(object):
         debias_factor = self.zero_debias_factor()
         group['lr'] = min(self._lr * self._lr_factor,
           2.0 * self._global_state["lr_grad_norm_avg_min"] \
-          / np.sqrt(np.exp(self._global_state['grad_norm_squared_avg_log'] / debias_factor) ) )
+          / (np.sqrt(np.exp(self._global_state['grad_norm_squared_avg_log'] / debias_factor) ) + eps) )
     return
 
 
