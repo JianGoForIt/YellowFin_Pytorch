@@ -422,8 +422,8 @@ class YFOptimizer(object):
     for group in self._optimizer.param_groups:
       group['momentum'] = self._mu
       if self._force_non_inc_step == False:
-        group['lr'] = min(self._lr * self._lr_factor, 
-          self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) )
+        group['lr'] = self._lr_factor * min(self._lr, 
+          2.0 * self._lr * math.sqrt(self._h_max) / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) )
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
