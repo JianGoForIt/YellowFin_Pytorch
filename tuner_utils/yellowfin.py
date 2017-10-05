@@ -2,6 +2,7 @@ import math
 import numpy as np
 import torch
 import copy
+import logging
 
 # eps for numerical stability
 eps = 1e-6
@@ -10,7 +11,7 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0, exploding_grad_elim_fac=10.0,
-    h_max_log_smooth=False, h_min_log_smooth=True, checkpoint_interval=500, verbose=True):
+    h_max_log_smooth=True, h_min_log_smooth=True, checkpoint_interval=500, verbose=True):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
