@@ -425,7 +425,7 @@ class YFOptimizer(object):
     for group in self._optimizer.param_groups:
       group['momentum'] = self._mu
       if self._force_non_inc_step == False:
-        group['lr'] = min(self._lr * self._lr_factor, 
+        group['lr'] = self._lr_factor * min(self._lr, 
           self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) )
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
@@ -464,7 +464,7 @@ class YFOptimizer(object):
 
     # threshold for preventing exploding gradients
     if self._iter > self._curv_win_width:
-      torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_elim_fac * np.sqrt(self._h_max) + eps)
+      torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._exploding_grad_elim_fac * self._h_max) + eps)
 
 
     try:
@@ -474,7 +474,8 @@ class YFOptimizer(object):
       # update learning rate and momentum
       self.update_hyper_param()
 
-      # apply update
+      if self._iter > self._curv_win_width:
+        torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._h_max) + eps)
       self._optimizer.step()
 
       # periodically save model and states
