@@ -9,8 +9,8 @@ eps = 1e-6
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0,
-    h_max_log_smooth=False, h_min_log_smooth=False, checkpoint_interval=500, verbose=True):
+    auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0, exploding_grad_elim_fac=10.0,
+    h_max_log_smooth=False, h_min_log_smooth=True, checkpoint_interval=500, verbose=True):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -65,6 +65,8 @@ class YFOptimizer(object):
 
     # lr threshold
     self._lr_grad_norm_thresh = lr_grad_norm_thresh
+    # gradient thresholding
+    self._exploding_grad_elim_fac = exploding_grad_elim_fac
 
     # smoothing options
     self._h_max_log_smooth = h_max_log_smooth
@@ -458,6 +460,11 @@ class YFOptimizer(object):
     elif (self._iter != 0 and self._auto_clip_fac != None):
       # do not clip the first iteration
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
+
+    # threshold for preventing exploding gradients
+    if self._iter > self._curv_win_width:
+      torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_elim_fac * np.sqrt(self._h_max) + eps)
+
 
     try:
       # before appply
