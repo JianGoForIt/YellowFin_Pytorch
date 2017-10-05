@@ -5,11 +5,12 @@ import copy
 
 # eps for numerical stability
 eps = 1e-6
+import logging
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0,
+    auto_clip_fac=None, force_non_inc_step=False, grad_norm_thresh_fac=1.0,
     h_max_log_smooth=False, h_min_log_smooth=False, checkpoint_interval=500, verbose=True):
     '''
     clip thresh is the threshold value on ||lr * gradient||
@@ -42,6 +43,10 @@ class YFOptimizer(object):
       Example on using lr_factor can be found here:
       https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109
     '''
+
+    # DEBUG
+    print("using tracked yellowfin")
+
     self._lr = lr
     self._mu = mu
     # we convert var_list from generator to list so that
@@ -64,7 +69,7 @@ class YFOptimizer(object):
     self._lr_factor = 1.0
 
     # lr threshold
-    self._lr_grad_norm_thresh = lr_grad_norm_thresh
+    self._grad_norm_thresh_fac = grad_norm_thresh_fac
 
     # smoothing options
     self._h_max_log_smooth = h_max_log_smooth
@@ -76,6 +81,7 @@ class YFOptimizer(object):
     self._verbose = verbose
     if self._verbose:
       logging.debug('Verbose mode with debugging info logged.')
+      logging.debug('grad norm thresh factor %f', self._grad_norm_thresh_fac)
 
 
   def state_dict(self):
@@ -423,7 +429,7 @@ class YFOptimizer(object):
       group['momentum'] = self._mu
       if self._force_non_inc_step == False:
         group['lr'] = self._lr_factor * min(self._lr, 
-          2.0 * self._lr * math.sqrt(self._h_max) / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) )
+          self._grad_norm_thresh_fac * self._lr * math.sqrt(self._h_max) / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) )
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
