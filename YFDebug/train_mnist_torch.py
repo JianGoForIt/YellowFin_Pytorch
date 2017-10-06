@@ -12,6 +12,7 @@ import random
 import sys 
 sys.path.append("../tuner_utils")
 from yellowfin import YFOptimizer
+from debug_plot import plot_func
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import numpy as np
@@ -94,53 +95,53 @@ def evaluate_valid(valid):
     with open(file_name, 'a') as f:
         f.write(log_line)
 
-def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_curv_list,
-             lr_g_norm_list, lr_list, dr_list, mu_list, grad_avg_norm_list,
-             dist_list, grad_var_list, move_list, recover_move_list):
-    def running_mean(x, N):
-        cumsum = np.cumsum(np.insert(x, 0, 0)) 
-        return (cumsum[N:] - cumsum[:-N]) / N 
-    plt.figure()
-    plt.semilogy(loss_list, '.', alpha=0.2, label="Loss")
-    plt.semilogy(running_mean(loss_list,100), label="Average Loss")
-    plt.xlabel('Iterations')
-    plt.ylabel('Loss')
-    plt.legend()
-    plt.grid()
-    ax = plt.subplot(111)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
-          ncol=3, fancybox=True, shadow=True)
-    plt.savefig(log_dir + "/fig_loss_iter_" + str(iter_id) + ".pdf")
-    plt.close()
+# def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_curv_list,
+#              lr_g_norm_list, lr_list, dr_list, mu_list, grad_avg_norm_list,
+#              dist_list, grad_var_list, move_list, recover_move_list):
+#     def running_mean(x, N):
+#         cumsum = np.cumsum(np.insert(x, 0, 0)) 
+#         return (cumsum[N:] - cumsum[:-N]) / N 
+#     plt.figure()
+#     plt.semilogy(loss_list, '.', alpha=0.2, label="Loss")
+#     plt.semilogy(running_mean(loss_list,100), label="Average Loss")
+#     plt.xlabel('Iterations')
+#     plt.ylabel('Loss')
+#     plt.legend()
+#     plt.grid()
+#     ax = plt.subplot(111)
+#     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
+#           ncol=3, fancybox=True, shadow=True)
+#     plt.savefig(log_dir + "/fig_loss_iter_" + str(iter_id) + ".pdf")
+#     plt.close()
 
-    plt.figure()
-    plt.semilogy(local_curv_list, label="local curvature")
-    plt.semilogy(max_curv_list, label="max curv in win")
-    plt.semilogy(min_curv_list, label="min curv in win")
-#         plt.semilogy(clip_norm_base_list, label="Clipping Thresh.")
-    plt.semilogy(lr_g_norm_list, label="lr * grad norm")
-    plt.semilogy(move_list, label="move")
-    plt.semilogy(recover_move_list, label="recover move")
-    plt.title("On local curvature")
-    plt.grid()
-    ax = plt.subplot(111)
-    ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
-          ncol=2, fancybox=True, shadow=True)
-    plt.savefig(log_dir + "/fig_curv_iter_" + str(iter_id) + ".pdf")
-    plt.close()
+#     plt.figure()
+#     plt.semilogy(local_curv_list, label="local curvature")
+#     plt.semilogy(max_curv_list, label="max curv in win")
+#     plt.semilogy(min_curv_list, label="min curv in win")
+# #         plt.semilogy(clip_norm_base_list, label="Clipping Thresh.")
+#     plt.semilogy(lr_g_norm_list, label="lr * grad norm")
+#     plt.semilogy(move_list, label="move")
+#     plt.semilogy(recover_move_list, label="recover move")
+#     plt.title("On local curvature")
+#     plt.grid()
+#     ax = plt.subplot(111)
+#     ax.legend(loc='upper center', bbox_to_anchor=(0.5, 1.05),
+#           ncol=2, fancybox=True, shadow=True)
+#     plt.savefig(log_dir + "/fig_curv_iter_" + str(iter_id) + ".pdf")
+#     plt.close()
 
-    plt.figure()
-    plt.semilogy(lr_list, label="lr min")
-    plt.semilogy(dr_list, label="dynamic range")
-    plt.semilogy(mu_list, label="mu")
-    plt.semilogy(grad_avg_norm_list, label="Grad avg norm")
-    plt.semilogy(dist_list, label="Est dist from opt")
-    plt.semilogy(grad_var_list, label="Grad variance")
-    plt.title('LR='+str(lr_list[-1])+' mu='+str(mu_list[-1] ) )
-    plt.grid()
-    plt.legend(loc="upper right")
-    plt.savefig(log_dir + "/fig_hyper_iter_" + str(iter_id) + ".pdf")
-    plt.close()
+#     plt.figure()
+#     plt.semilogy(lr_list, label="lr min")
+#     plt.semilogy(dr_list, label="dynamic range")
+#     plt.semilogy(mu_list, label="mu")
+#     plt.semilogy(grad_avg_norm_list, label="Grad avg norm")
+#     plt.semilogy(dist_list, label="Est dist from opt")
+#     plt.semilogy(grad_var_list, label="Grad variance")
+#     plt.title('LR='+str(lr_list[-1])+' mu='+str(mu_list[-1] ) )
+#     plt.grid()
+#     plt.legend(loc="upper right")
+#     plt.savefig(log_dir + "/fig_hyper_iter_" + str(iter_id) + ".pdf")
+#     plt.close()
 
 loss_list = [] 
 local_curv_list = []
@@ -153,11 +154,24 @@ mu_list = []
 dist_list = [] 
 grad_var_list = []
 
+lr_g_norm_list = []
+lr_g_norm_squared_list = []
+
+move_lr_g_norm_list = [] 
+move_lr_g_norm_squared_list = [] 
+
+lr_grad_norm_clamp_act_list = []
+fast_view_act_list = [] 
+
 for epoch in range(num_epochs):
     i = 0
     for x in train:
         t = -time.time()
         #import ipdb; ipdb.set_trace()
+        
+        if i > 1:       
+            fast_view_act_list.append(4.0/( (math.sqrt(opt._global_state["grad_norm_squared"] ) + math.sqrt(opt._h_min) )**2 + 1e-6))
+            lr_grad_norm_clamp_act_list.append(opt._lr_grad_norm_thresh / (math.sqrt(opt._global_state["grad_norm_squared"] ) + 1e-6) )
 
         x = numpy.asarray(x, dtype=numpy.float32)
         x = torch.from_numpy(x)
@@ -187,7 +201,12 @@ for epoch in range(num_epochs):
         dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
         dist_list.append(opt._dist_to_opt)
         grad_var_list.append(opt._grad_var)
-      
+
+        lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
+        move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
+
 
         if (i+1) % 10 == 0:
             log_line = 'Epoch [%d/%d], Step %d, Loss: %f, batch_time: %f \n' %(epoch, num_epochs, i+1, 784 * loss.data[0], t)
@@ -195,14 +214,24 @@ for epoch in range(num_epochs):
             with open(file_name, 'a') as f:
                 f.write(log_line)
         if (i + 1) % 500 == 0:
-           plot_func(log_dir, epoch * 500 + i, loss_list, local_curv_list, max_curv_list, min_curv_list,
-             lr_g_norm_list, lr_list, dr_list, mu_list, grad_avg_norm_list=[],
-             dist_list=dist_list, grad_var_list=grad_var_list, move_list=[], recover_move_list=[])
+           # plot_func(log_dir, epoch * 500 + i, loss_list, local_curv_list, max_curv_list, min_curv_list,
+           #   lr_g_norm_list, lr_list, dr_list, mu_list, grad_avg_norm_list=[],
+           #   dist_list=dist_list, grad_var_list=grad_var_list, move_list=[], recover_move_list=[])
+            plot_func(log_dir=log_dir, iter_id=i + epoch * 1500, loss_list=loss_list, 
+                local_curv_list=local_curv_list, max_curv_list=h_max_list, 
+                min_curv_list=h_min_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
+                lr_list=lr_list, dr_list=dr_list, mu_list=mu_list, 
+                grad_avg_norm_list=[],
+                dist_list=dist_list, grad_var_list=grad_var_list, 
+                move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
+                fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list)
+            print "figure plotted"
 
-           with open(log_dir + "/mu_list.txt", "w") as f:
+
+            with open(log_dir + "/mu_list.txt", "w") as f:
                np.savetxt(f, mu_list)
                 
-           with open(log_dir + "/lr_list.txt", "w") as f:
+            with open(log_dir + "/lr_list.txt", "w") as f:
                np.savetxt(f, lr_list)
 
 
