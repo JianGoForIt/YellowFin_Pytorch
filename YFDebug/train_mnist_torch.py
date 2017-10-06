@@ -172,7 +172,7 @@ for epoch in range(num_epochs):
         t = -time.time()
         #import ipdb; ipdb.set_trace()
         
-        if i > 1:       
+        if not (i == 0 and epoch == 0):       
             fast_view_act_list.append(4.0/( (math.sqrt(opt._global_state["grad_norm_squared"] ) + math.sqrt(opt._h_min) )**2 + 1e-6))
             lr_grad_norm_clamp_act_list.append(opt._lr_grad_norm_thresh / (math.sqrt(opt._global_state["grad_norm_squared"] ) + 1e-6) )
 
@@ -208,8 +208,10 @@ for epoch in range(num_epochs):
         lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
         move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
         move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
-        lr_t_list.append(opt._optimizer._lr_t)
-        mu_t_list.append(opt._optimizer._mu_t)
+        
+        if not (i == 0 and epoch == 0):
+            lr_t_list.append(opt._lr_t)
+            mu_t_list.append(opt._mu_t)
 
         if (i+1) % 10 == 0:
             log_line = 'Epoch [%d/%d], Step %d, Loss: %f, batch_time: %f \n' %(epoch, num_epochs, i+1, 784 * loss.data[0], t)
@@ -223,7 +225,8 @@ for epoch in range(num_epochs):
             plot_func(log_dir=log_dir, iter_id=i + epoch * 1500, loss_list=loss_list, 
                 local_curv_list=local_curv_list, max_curv_list=max_curv_list, 
                 min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
-                lr_list=lr_list, dr_list=dr_list, mu_list=mu_list, 
+                lr_list=lr_list, lr_t_list=lr_t_list, dr_list=dr_list, 
+                mu_list=mu_list, mu_t_list=mu_t_list,
                 grad_avg_norm_list=[],
                 dist_list=dist_list, grad_var_list=grad_var_list, 
                 move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
@@ -232,12 +235,16 @@ for epoch in range(num_epochs):
 
 
             with open(log_dir + "/mu_list.txt", "w") as f:
-               np.savetxt(f, mu_list)
+                np.savetxt(f, mu_list)
                 
             with open(log_dir + "/lr_list.txt", "w") as f:
-               np.savetxt(f, lr_list)
+                np.savetxt(f, lr_list)
 
-
+           
+            with open(log_dir + "/mu_t.txt", "w") as f:
+                np.savetxt(f, mu_t_list)
+            with open(log_dir + "/lr_t.txt", "w") as f:
+                np.savetxt(f, lr_t_list)
         #if (i + 1) % 1000 == 0:
         #    evaluate_valid(valid) 
 
