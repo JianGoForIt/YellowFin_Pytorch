@@ -150,6 +150,8 @@ max_curv_list = []
 min_curv_list = []
 lr_g_norm_list = [] 
 lr_list = [] 
+lr_t_list = []
+mu_t_list = []
 dr_list = [] 
 mu_list = [] 
 dist_list = [] 
@@ -206,7 +208,8 @@ for epoch in range(num_epochs):
         lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
         move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
         move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
-
+        lr_t_list.append(opt._optimizer._lr_t)
+        mu_t_list.append(opt._optimizer._mu_t)
 
         if (i+1) % 10 == 0:
             log_line = 'Epoch [%d/%d], Step %d, Loss: %f, batch_time: %f \n' %(epoch, num_epochs, i+1, 784 * loss.data[0], t)

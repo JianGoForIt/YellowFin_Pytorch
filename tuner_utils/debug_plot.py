@@ -2,7 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_curv_list,
-             lr_g_norm_list, lr_g_norm_squared_list, lr_list, dr_list, mu_list, grad_avg_norm_list,
+             lr_g_norm_list, lr_g_norm_squared_list, lr_list, lr_t_list, dr_list, 
+             mu_list, mu_t_list, grad_avg_norm_list,
              dist_list, grad_var_list, move_lr_g_norm_list, move_lr_g_norm_squared_list, 
              fast_view_act_list, lr_grad_norm_clamp_act_list):
     def running_mean(x, N):
@@ -75,7 +76,22 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
     plt.close()
 
     plt.figure()
-    plt.semilogy(lr_list, label="lr min")
+    plt.semilogy(lr_list, label="lr")
+    plt.semilogy(mu_list, label="mu")
+    plt.semilogy(lr_t_list, label="lr_t")
+    plt.semilogy(mu_t_list, label="mu_t")
+    if np.min(lr_list) < 1e-4 or np.min(lr_t_list) < 1e-4:
+      plt.ylim([1e-4, None] )
+    if np.max(lr_list) > 1e2 or np.max(lr_t_list) > 1e2:
+      plt.ylim([None, 1e2] )
+    plt.title('LR='+str(lr_list[-1])+' mu='+str(mu_list[-1] ) )
+    plt.grid()
+    plt.legend()
+    plt.savefig(log_dir + "/fig_lr_mu_iter_" + str(iter_id) + ".pdf")
+    plt.close()
+
+    plt.figure()
+    plt.semilogy(lr_list, label="lr")
     plt.semilogy(dr_list, label="dynamic range")
     plt.semilogy(mu_list, label="mu")
     plt.semilogy(grad_avg_norm_list, label="Grad avg norm")
