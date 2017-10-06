@@ -196,6 +196,9 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
    # plt.semilogy(lr_g_norm_squared_list, label="lr * grad norm squared")
    # plt.semilogy(move_lr_g_norm_list, label="lr * grad norm move")
    # plt.semilogy(move_lr_g_norm_squared_list, label="lr * grad norm squared move")
+    if np.min(lr_g_norm_list) < 1e-9 or np.min(local_curv_list) < 1e-9 or np.min(max_curv_list) < 1e-9 or np.min(min_curv_list) < 1e-9:
+      plt.ylim([1e-9, None] )
+
     plt.title("On local curvature")
     plt.grid()
     ax = plt.subplot(111)
@@ -212,6 +215,8 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
     #plt.semilogy(lr_g_norm_squared_list, label="lr * grad norm squared")
     plt.semilogy(move_lr_g_norm_list, label="lr * grad norm move")
     #plt.semilogy(move_lr_g_norm_squared_list, label="lr * grad norm squared move")
+    if np.min(lr_g_norm_list) < 1e-9 or np.min(move_lr_g_norm_list) < 1e-9:
+      plt.ylim([1e-9, None] )
     plt.title("On local curvature")
     plt.grid()
     ax = plt.subplot(111)
@@ -226,6 +231,8 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
 #         plt.semilogy(clip_norm_base_list, label="Clipping Thresh.")
     plt.semilogy(lr_g_norm_squared_list, label="lr * grad norm squared")
     plt.semilogy(move_lr_g_norm_squared_list, label="lr * grad norm squared move")
+    if np.min(lr_g_norm_squared_list) < 1e-9 or np.min(move_lr_g_norm_squared_list) < 1e-9:
+      plt.ylim([1e-9, None] )
     plt.title("On local curvature")
     plt.grid()
     ax = plt.subplot(111)
@@ -242,6 +249,8 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
     plt.semilogy(grad_var_list, label="Grad variance")
     plt.semilogy(fast_view_act_list, label="fast_view_act lr")
     plt.semilogy(lr_grad_norm_clamp_act_list, label="lr grad norm clamp lr")
+    if np.min(grad_var_list) < 1e-9 or np.min(fast_view_act_list) < 1e-9 or np.min(lr_grad_norm_clamp_act_list) < 1e-9:
+      plt.ylim([1e-9, None] )
     plt.title('LR='+str(lr_list[-1])+' mu='+str(mu_list[-1] ) )
     plt.grid()
     plt.legend()
