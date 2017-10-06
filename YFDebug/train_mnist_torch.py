@@ -8,6 +8,7 @@ from layers_torch import *
 import time
 from char_data_iterator import TextIterator
 import numpy
+import math
 import random
 import sys 
 sys.path.append("../tuner_utils")
@@ -17,7 +18,7 @@ import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import numpy as np
 import logging
-log_dir = "./results/lr_grad_clamp_1.0_all_log_smooth_pure_fast_view"
+log_dir = "./results/lr_grad_clamp_1.0_h_max_linear_h_min_log_pure_fast_view"
 if not os.path.isdir(log_dir):
    os.mkdir(log_dir)
 logging.basicConfig(filename=log_dir + "/num.log",level=logging.DEBUG)
@@ -195,7 +196,6 @@ for epoch in range(num_epochs):
         local_curv_list.append(opt._global_state['grad_norm_squared'] )
         max_curv_list.append(opt._h_max)
         min_curv_list.append(opt._h_min)
-        lr_g_norm_list.append(opt._optimizer.param_groups[0]['lr'] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
         lr_list.append(opt._lr)
         mu_list.append(opt._mu)
         dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
@@ -218,8 +218,8 @@ for epoch in range(num_epochs):
            #   lr_g_norm_list, lr_list, dr_list, mu_list, grad_avg_norm_list=[],
            #   dist_list=dist_list, grad_var_list=grad_var_list, move_list=[], recover_move_list=[])
             plot_func(log_dir=log_dir, iter_id=i + epoch * 1500, loss_list=loss_list, 
-                local_curv_list=local_curv_list, max_curv_list=h_max_list, 
-                min_curv_list=h_min_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
+                local_curv_list=local_curv_list, max_curv_list=max_curv_list, 
+                min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
                 lr_list=lr_list, dr_list=dr_list, mu_list=mu_list, 
                 grad_avg_norm_list=[],
                 dist_list=dist_list, grad_var_list=grad_var_list, 
