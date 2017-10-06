@@ -327,8 +327,13 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
                 np.savetxt(f, mu_t_list)
                 
             with open(log_dir + "/lr_t_list.txt", "w") as f:
-                np.savetxt(f, lr_t_list)
-                
+                np.savetxt(f, lr_t_list) 
+              
+            with open(log_dir + "/mu_list.txt", "w") as f:
+                np.savetxt(f, mu_list) 
+
+            with open(log_dir + "/lr_list.txt", "w") as f:
+                np.savetxt(f, lr_list)
             
         # DEBUG
         loss_list.append(loss)
@@ -374,7 +379,8 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
             plot_func(log_dir=log_dir, iter_id=i, loss_list=loss_list, 
                  local_curv_list=h_list, max_curv_list=h_max_list, 
                  min_curv_list=h_min_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
-                 lr_list=lr_list, dr_list=dr_list, mu_list=mu_list, 
+                 lr_list=lr_list, lr_t_list=lr_t_list, dr_list=dr_list, 
+                 mu_list=mu_list, mu_t_list=mu_t_list,
                  grad_avg_norm_list=grad_avg_norm_list,
                  dist_list=dist_list, grad_var_list=grad_var_list, 
                  move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
