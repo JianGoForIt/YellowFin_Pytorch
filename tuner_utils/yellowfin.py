@@ -11,7 +11,7 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0, exploding_grad_elim_fac=2.0,
-    h_max_log_smooth=False, h_min_log_smooth=True, checkpoint_interval=500, verbose=True):
+    h_max_log_smooth=True, h_min_log_smooth=True, checkpoint_interval=500, verbose=True, fast_bound_const=0.01):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -45,6 +45,8 @@ class YFOptimizer(object):
     '''
     self._lr = lr
     self._mu = mu
+    self._lr_t = lr
+    self._mu_t = mu
     # we convert var_list from generator to list so that
     # it can be used for multiple times
     self._var_list = list(var_list)
@@ -68,6 +70,8 @@ class YFOptimizer(object):
     self._lr_grad_norm_thresh = lr_grad_norm_thresh
     # gradient thresholding
     self._exploding_grad_elim_fac = exploding_grad_elim_fac
+    # fast bound threshold
+    self._fast_bound_const = fast_bound_const
 
     # smoothing options
     self._h_max_log_smooth = h_max_log_smooth
@@ -352,7 +356,13 @@ class YFOptimizer(object):
           logging.debug("param grad squared gid %d, pid %d, %f, %f", group_id, p_id, param_grad_norm_squared,
             np.log(param_grad_norm_squared) / np.log(10) )
 
-        
+    if self._iter > self._curv_win_width and global_state['grad_norm_squared'] >= self._exploding_grad_elim_fac * self._h_max:
+	self._exploding_grad_detected = True
+        self._exploding_grad_clip_thresh= np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )
+    else:
+        self._exploding_grad_detected = False      
+
+  
     global_state['grad_norm_squared_avg'] = \
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
         
@@ -435,14 +445,17 @@ class YFOptimizer(object):
 
   def update_hyper_param(self):
     for group in self._optimizer.param_groups:
-      group['momentum'] = self._mu
+      group['momentum'] = max(self._mu, self._mu_t)
       if self._force_non_inc_step == False:
-        group['lr'] = self._lr_factor * min(4.0/( (math.sqrt(self._global_state["grad_norm_squared"] ) + math.sqrt(self._h_min) )**2 + eps), min(self._lr, 
-          self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) ) )
+        group['lr'] = min(self._lr_t, self._lr) * self._lr_factor
+        #group['lr'] = self._lr_factor * min(self._fast_bound_const/( (math.sqrt(self._global_state["grad_norm_squared"] ) + math.sqrt(self._h_min) )**2 + eps), min(self._lr, 
+         # self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) ) )
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
         # in YFOptimizer.__init__ for more details
+        # DEBUG
+        assert 0
         self.lr_grad_norm_avg()
         debias_factor = self.zero_debias_factor()
         group['lr'] = min(self._lr * self._lr_factor,
@@ -486,8 +499,9 @@ class YFOptimizer(object):
       # update learning rate and momentum
       self.update_hyper_param()
 
-     # if self._iter > self._curv_win_width:
-     #   torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._h_max) + eps)
+      if self._exploding_grad_detected:
+        print "exploding gradient detected ", self._exploding_grad_clip_thresh, np.sqrt(self._global_state['grad_norm_squared']) 
+        torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_clip_thresh + eps)
       self._optimizer.step()
 
       # periodically save model and states
