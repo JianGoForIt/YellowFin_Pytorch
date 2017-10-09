@@ -139,7 +139,7 @@ sigmoid = nn.Sigmoid()
 learning_rate = 1.0
 print("lr thresh", args.lr_thresh)
 optimizer = YFOptimizer(mix_softmax.parameters(), beta=0.999, lr=learning_rate, mu=0.0, zero_debias=True, clip_thresh=None, 
-                        auto_clip_fac=None, curv_win_width=20, force_non_inc_step=False, lr_grad_norm_thresh=args.lr_thresh)
+                        auto_clip_fac=None, curv_win_width=20, force_non_inc_step=False, exploding_grad_elim_fac=args.lr_thresh)
 
 # word_optmizer = YFOptimizer(word_attn.parameters(), lr=learning_rate, mu=0.0, auto_clip_fac=2.0)
 # mix_optimizer = YFOptimizer(mix_softmax.parameters(), lr=learning_rate, mu=0.0, auto_clip_fac=2.0)

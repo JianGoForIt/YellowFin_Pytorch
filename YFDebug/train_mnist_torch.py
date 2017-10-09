@@ -17,8 +17,28 @@ from debug_plot import plot_func
 import matplotlib.pyplot as plt
 plt.switch_backend('agg')
 import numpy as np
+import argparse
+parser = argparse.ArgumentParser(description='PyTorch Olexa model')
+parser.add_argument("--log_dir", type=str, default="./results")
+parser.add_argument("--fast_bound_const", type=float, default=0.01)
+parser.add_argument("--seed", type=int, default=1)
+args = parser.parse_args()
+
+print("using seed ", args.seed)
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)
+if torch.cuda.is_available():
+    #if not args.use_cuda:
+    #    print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+    #else:
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
+
+import numpy as np
 import logging
-log_dir = "./results/lr_grad_clamp_1.0_h_max_linear_h_min_log_pure_fast_view"
+#log_dir = "./results/lr_grad_clamp_1.0_h_max_log_h_min_log_pure_fast_view_win_200"
+log_dir = args.log_dir
+fast_bound_const = args.fast_bound_const
 if not os.path.isdir(log_dir):
    os.mkdir(log_dir)
 logging.basicConfig(filename=log_dir + "/num.log",level=logging.DEBUG)
@@ -30,7 +50,7 @@ num_layers = 2
 num_classes = 2
 batch_size = 32
 valid_batch_size = 32
-num_epochs = 100
+num_epochs = 15 
 lr = 0.0001
 n_words=2
 maxlen=785
@@ -67,7 +87,8 @@ rnn.cuda()
 criterion = nn.CrossEntropyLoss()
 
 #opt = torch.optim.Adam(rnn.parameters(), lr=lr)
-opt = YFOptimizer(rnn.parameters())
+#opt = YFOptimizer(rnn.parameters(), fast_bound_const=fast_bound_const)
+opt = YFOptimizer(rnn.parameters(), exploding_grad_elim_fac=args.fast_bound_const)
 
 
 def evaluate_valid(valid):
@@ -173,7 +194,7 @@ for epoch in range(num_epochs):
         #import ipdb; ipdb.set_trace()
         
         if not (i == 0 and epoch == 0):       
-            fast_view_act_list.append(4.0/( (math.sqrt(opt._global_state["grad_norm_squared"] ) + math.sqrt(opt._h_min) )**2 + 1e-6))
+            fast_view_act_list.append(opt._fast_bound_const/( (math.sqrt(opt._global_state["grad_norm_squared"] ) + math.sqrt(opt._h_min) )**2 + 1e-6))
             lr_grad_norm_clamp_act_list.append(opt._lr_grad_norm_thresh / (math.sqrt(opt._global_state["grad_norm_squared"] ) + 1e-6) )
 
         x = numpy.asarray(x, dtype=numpy.float32)
@@ -208,7 +229,7 @@ for epoch in range(num_epochs):
         lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
         move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
         move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
-        
+       
         if not (i == 0 and epoch == 0):
             lr_t_list.append(opt._lr_t)
             mu_t_list.append(opt._mu_t)
