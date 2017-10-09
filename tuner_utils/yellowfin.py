@@ -445,10 +445,10 @@ class YFOptimizer(object):
 
   def update_hyper_param(self):
     for group in self._optimizer.param_groups:
-      group['momentum'] = self._mu_t
+      group['momentum'] = self._mu
       #group['momentum'] = max(self._mu, self._mu_t)
       if self._force_non_inc_step == False:
-        group['lr'] = self._lr_t * self._lr_factor
+        group['lr'] = self._lr * self._lr_factor
         #group['lr'] = min(self._lr_t, self._lr) * self._lr_factor
         #group['lr'] = self._lr_factor * min(self._fast_bound_const/( (math.sqrt(self._global_state["grad_norm_squared"] ) + math.sqrt(self._h_min) )**2 + eps), min(self._lr, 
          # self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) ) )
