@@ -103,7 +103,7 @@ elif args.opt_method == "Adam":
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 elif args.opt_method == "YF":
     print("using YF")
-    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4, lr_grad_norm_thresh=args.lr_thresh)
+    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4, exploding_grad_elim_fac=args.lr_thresh)
 else:
     raise Exception("Optimizer not supported")
 # Training
