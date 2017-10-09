@@ -1,1 +1,1 @@
-python main.py --lr=1.0 --mu=0.0 --logdir=./results/YF_2.0_seed_lr_grad_clamp_0.1 --opt_method=YF --seed=1 --lr_thresh=0.1
+python main.py --lr=1.0 --mu=0.0 --logdir=./results/YF_seed_1_h_max_linear_h_min_log_lr_t_mu_t --opt_method=YF --seed=1 --lr_thresh=2.0

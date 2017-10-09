@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib
+matplotlib.use('agg')
 import matplotlib.pyplot as plt
 
 def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_curv_list,
@@ -75,6 +77,10 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
     plt.savefig(log_dir + "/fig_move_squared_iter_" + str(iter_id) + ".pdf")
     plt.close()
 
+    # DEBUG
+#    print "check lr_list ", len(lr_list)
+#    print "check mu_list ", len(mu_list)
+
     plt.figure()
     plt.semilogy(lr_list, label="lr")
     plt.semilogy(mu_list, label="mu")
@@ -99,7 +105,7 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
     plt.semilogy(grad_var_list, label="Grad variance")
     plt.semilogy(fast_view_act_list, label="fast_view_act lr")
     plt.semilogy(lr_grad_norm_clamp_act_list, label="lr grad norm clamp lr")
-    if np.min(grad_var_list) < 1e-9 or np.min(fast_view_act_list) < 1e-9 or np.min(lr_grad_norm_clamp_act_list) < 1e-9:
+    if (len(grad_var_list) > 0 and np.min(grad_var_list) < 1e-9) or (len(fast_view_act_list) > 0 and np.min(fast_view_act_list) < 1e-9) or (len(lr_grad_norm_clamp_act_list) > 0 and np.min(lr_grad_norm_clamp_act_list) < 1e-9):
       plt.ylim([1e-9, None] )
     plt.title('LR='+str(lr_list[-1])+' mu='+str(mu_list[-1] ) )
     plt.grid()
