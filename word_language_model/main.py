@@ -29,7 +29,7 @@ parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
 parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=10.0,
+parser.add_argument('--clip', type=float, default=0.25,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=40,
                     help='upper epoch limit')
@@ -180,7 +180,7 @@ def train(opt, loss_list,\
         #     print group['lr'], group['momentum']
 
 
-        #loss_list.append(loss.data[0])
+        loss_list.append(loss.data[0])
         local_curv_list.append(opt._global_state['grad_norm_squared'] )
         max_curv_list.append(opt._h_max)
         min_curv_list.append(opt._h_min)
