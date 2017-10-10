@@ -13,6 +13,7 @@ import sys
 import os
 sys.path.append("../tuner_utils")
 from yellowfin import YFOptimizer
+from debug_plot import plot_func
 import logging
 
 parser = argparse.ArgumentParser(description='PyTorch PennTreeBank RNN/LSTM Language Model')
@@ -134,7 +135,23 @@ def evaluate(data_source):
     return total_loss[0] / len(data_source)
 
 
-def train():
+def train(opt, loss_list,\
+    local_curv_list,\
+    max_curv_list,\
+    min_curv_list,\
+    lr_list,\
+    lr_t_list,\
+    mu_t_list,\
+    dr_list,\
+    mu_list,\
+    dist_list,\
+    grad_var_list,\
+    lr_g_norm_list,\
+    lr_g_norm_squared_list,\
+    move_lr_g_norm_list,\
+    move_lr_g_norm_squared_list,\
+    lr_grad_norm_clamp_act_list,\
+    fast_view_act_list):
     # Turn on training mode which enables dropout.
     model.train()
     total_loss = 0
@@ -162,6 +179,26 @@ def train():
         # for group in optimizer._optimizer.param_groups:
         #     print group['lr'], group['momentum']
 
+
+        #loss_list.append(loss.data[0])
+        local_curv_list.append(opt._global_state['grad_norm_squared'] )
+        max_curv_list.append(opt._h_max)
+        min_curv_list.append(opt._h_min)
+        lr_list.append(opt._lr)
+        mu_list.append(opt._mu)
+        dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
+        dist_list.append(opt._dist_to_opt)
+        grad_var_list.append(opt._grad_var)
+
+        lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
+        move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
+
+        lr_t_list.append(opt._lr_t)
+        mu_t_list.append(opt._mu_t)
+
+
         total_loss += loss.data
         train_loss_list.append(loss.data[0] )
 
@@ -174,7 +211,24 @@ def train():
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
             total_loss = 0
             start_time = time.time()
-    return train_loss_list
+    return train_loss_list,\
+    loss_list,\
+    local_curv_list,\
+    max_curv_list,\
+    min_curv_list,\
+    lr_list,\
+    lr_t_list,\
+    mu_t_list,\
+    dr_list,\
+    mu_list,\
+    dist_list,\
+    grad_var_list,\
+    lr_g_norm_list,\
+    lr_g_norm_squared_list,\
+    move_lr_g_norm_list,\
+    move_lr_g_norm_squared_list,\
+    lr_grad_norm_clamp_act_list,\
+    fast_view_act_list
 
 # Loop over epochs.
 lr = args.lr
@@ -189,6 +243,29 @@ try:
     val_loss_list = []
     lr_list = []
     mu_list = []
+
+    loss_list = []
+    local_curv_list = []
+    max_curv_list = []
+    min_curv_list = []
+    lr_g_norm_list = []
+    lr_list = []
+    lr_t_list = []
+    mu_t_list = []
+    dr_list = []
+    mu_list = []
+    dist_list = []
+    grad_var_list = []
+    
+    lr_g_norm_list = []
+    lr_g_norm_squared_list = []
+    
+    move_lr_g_norm_list = []
+    move_lr_g_norm_squared_list = []
+    
+    lr_grad_norm_clamp_act_list = []
+    fast_view_act_list = []
+
     if args.opt_method == "SGD":
         print("using SGD")
         optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.0)
@@ -206,7 +283,44 @@ try:
         optimizer = torch.optim.Adam(model.parameters(), lr)
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
-        train_loss = train()
+        #train_loss = train()
+        train_loss_list, \
+        loss_list, \
+        local_curv_list,\
+        max_curv_list,\
+        min_curv_list,\
+        lr_list,\
+        lr_t_list,\
+        mu_t_list,\
+        dr_list,\
+        mu_list,\
+        dist_list,\
+        grad_var_list,\
+        lr_g_norm_list,\
+        lr_g_norm_squared_list,\
+        move_lr_g_norm_list,\
+        move_lr_g_norm_squared_list,\
+        lr_grad_norm_clamp_act_list,\
+        fast_view_act_list = \
+          train(optimizer,
+          loss_list, \
+          local_curv_list,\
+          max_curv_list,\
+          min_curv_list,\
+          lr_list,\
+          lr_t_list,\
+          mu_t_list,\
+          dr_list,\
+          mu_list,\
+          dist_list,\
+          grad_var_list,\
+          lr_g_norm_list,\
+          lr_g_norm_squared_list,\
+          move_lr_g_norm_list,\
+          move_lr_g_norm_squared_list,\
+          lr_grad_norm_clamp_act_list,\
+          fast_view_act_list)
+
         train_loss_list += train_loss
         val_loss = evaluate(val_data)
         val_loss_list.append(val_loss)
@@ -229,9 +343,23 @@ try:
             else:
                 for group in optimizer.param_groups:
                     group['lr'] /= 4.0
-        if args.opt_method == "YF":
-            mu_list.append(optimizer._mu)
-            lr_list.append(optimizer._lr)
+        #if args.opt_method == "YF":
+        #    mu_list.append(optimizer._mu)
+        #    lr_list.append(optimizer._lr)
+        
+
+        if epoch % 1 == 0 or epoch == 5:
+            plot_func(log_dir=args.logdir, iter_id=epoch, loss_list=loss_list,
+                local_curv_list=local_curv_list, max_curv_list=max_curv_list,
+                min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list,
+                lr_list=lr_list, lr_t_list=lr_t_list, dr_list=dr_list,
+                mu_list=mu_list, mu_t_list=mu_t_list,
+                grad_avg_norm_list=[],
+                dist_list=dist_list, grad_var_list=grad_var_list,
+                move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
+                fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list)
+
+
         with open(args.logdir+"/loss.txt", "wb") as f:
             np.savetxt(f, np.array(train_loss_list) )
         with open(args.logdir+"/val_loss.txt", "wb") as f:
