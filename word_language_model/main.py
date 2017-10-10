@@ -29,7 +29,7 @@ parser.add_argument('--nlayers', type=int, default=2,
                     help='number of layers')
 parser.add_argument('--lr', type=float, default=20,
                     help='initial learning rate')
-parser.add_argument('--clip', type=float, default=0.25,
+parser.add_argument('--clip', type=float, default=1.0,
                     help='gradient clipping')
 parser.add_argument('--epochs', type=int, default=40,
                     help='upper epoch limit')
@@ -181,22 +181,23 @@ def train(opt, loss_list,\
 
 
         loss_list.append(loss.data[0])
-        local_curv_list.append(opt._global_state['grad_norm_squared'] )
-        max_curv_list.append(opt._h_max)
-        min_curv_list.append(opt._h_min)
-        lr_list.append(opt._lr)
-        mu_list.append(opt._mu)
-        dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
-        dist_list.append(opt._dist_to_opt)
-        grad_var_list.append(opt._grad_var)
+        if args.opt_method == 'YF':        
+            local_curv_list.append(opt._global_state['grad_norm_squared'] )
+            max_curv_list.append(opt._h_max)
+            min_curv_list.append(opt._h_min)
+            lr_list.append(opt._lr)
+            mu_list.append(opt._mu)
+            dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
+            dist_list.append(opt._dist_to_opt)
+            grad_var_list.append(opt._grad_var)
 
-        lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
-        lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
-        move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
-        move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
+            lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+            lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
+            move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+            move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
 
-        lr_t_list.append(opt._lr_t)
-        mu_t_list.append(opt._mu_t)
+            lr_t_list.append(opt._lr_t)
+            mu_t_list.append(opt._mu_t)
 
 
         total_loss += loss.data
@@ -348,7 +349,7 @@ try:
         #    lr_list.append(optimizer._lr)
         
 
-        if epoch % 5 == 0 or epoch == 5:
+        if args.opt_method=='YF' and (epoch % 5 == 0 or epoch == 5):
             plot_func(log_dir=args.logdir, iter_id=epoch, loss_list=loss_list,
                 local_curv_list=local_curv_list, max_curv_list=max_curv_list,
                 min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list,
