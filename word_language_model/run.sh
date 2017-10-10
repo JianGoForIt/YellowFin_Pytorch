@@ -1,6 +1,10 @@
 #python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_fast_view_clamp_0.01 --cuda --seed=1 --lr_thresh=0.01
 
-python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_no_post_smoothing --cuda --seed=1 --lr_thresh=10.0
+#python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_min_lr_t_lr_max_mu_t_mu_h_max_linear_smooth_exploding_clip_fac_2 --cuda --seed=1 --lr_thresh=2.0
+
+python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_lr_t_mu_t_h_max_log --cuda --seed=1 --lr_thresh=2.0
+
+python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=Adam --logdir=./results/Adam_seed_1_no_clip_lr_0.001 --cuda --seed=1 --lr_thresh=2.0 --lr=0.001
 
 #python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_clip_grad_fac_10.0 --cuda --seed=1 --lr_thresh=10.0
 
