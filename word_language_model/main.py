@@ -348,7 +348,7 @@ try:
         #    lr_list.append(optimizer._lr)
         
 
-        if epoch % 1 == 0 or epoch == 5:
+        if epoch % 5 == 0 or epoch == 5:
             plot_func(log_dir=args.logdir, iter_id=epoch, loss_list=loss_list,
                 local_curv_list=local_curv_list, max_curv_list=max_curv_list,
                 min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list,
