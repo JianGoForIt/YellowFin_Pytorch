@@ -284,7 +284,7 @@ try:
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
         #train_loss = train()
-        train_loss_list, \
+        train_loss, \
         loss_list, \
         local_curv_list,\
         max_curv_list,\
