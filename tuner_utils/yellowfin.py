@@ -438,7 +438,7 @@ class YFOptimizer(object):
 
   def get_mu(self):
     root = self.get_cubic_root()
-    dr = (self._h_max + eps) / (self._h_min + eps)
+    dr = max( (self._h_max + eps) / (self._h_min + eps), 1.0 + eps)
     self._mu_t = max(root**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
     return 
 
