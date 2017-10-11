@@ -357,10 +357,10 @@ class YFOptimizer(object):
             np.log(param_grad_norm_squared) / np.log(10) )
 
     if self._iter > self._curv_win_width and global_state['grad_norm_squared'] >= self._exploding_grad_elim_fac * self._h_max:
-	self._exploding_grad_detected = True
-        self._exploding_grad_clip_thresh= np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )
+      self._exploding_grad_detected = True
+      self._exploding_grad_clip_thresh= np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )
     else:
-        self._exploding_grad_detected = False      
+      self._exploding_grad_detected = False      
 
   
     global_state['grad_norm_squared_avg'] = \
