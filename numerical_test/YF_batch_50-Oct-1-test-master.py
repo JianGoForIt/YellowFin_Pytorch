@@ -369,7 +369,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
 
 
         # DEBUG
-        print("thresh check ", move_lr_g_norm_list[-1], move_lr_g_norm_squared_list[-1])
+        #print("thresh check ", move_lr_g_norm_list[-1], move_lr_g_norm_squared_list[-1])
 
         lr_list.append(optimizer._lr)
         dr_list.append(optimizer._h_max / optimizer._h_min)
@@ -379,8 +379,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
 #             with open("h_val.txt", "w") as f:
 #                 np.savetxt(f, h_list)
         
-        # if (i % print_figure_every == 0 and i != 0) or (i == 50 or i == 1000):
-        if (i % 20 == 0 and i != 0) or (i == 50 or i == 1000):
+        if (i % print_figure_every == 0 and i != 0) or (i == 50 or i == 1000):
             plot_func(log_dir=log_dir, iter_id=i, loss_list=loss_list, 
                  local_curv_list=h_list, max_curv_list=h_max_list, 
                  min_curv_list=h_min_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
