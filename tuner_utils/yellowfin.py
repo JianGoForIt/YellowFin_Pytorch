@@ -9,9 +9,9 @@ eps = 1e-6
 
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.1, mu=0.0, clip_thresh=None, weight_decay=0.0,
-    beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=True, delta_mu=0.0, 
+    beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0, exploding_grad_elim_fac=2.0,
-    h_max_log_smooth=False, h_min_log_smooth=True, checkpoint_interval=500, verbose=True, fast_bound_const=0.01):
+    h_max_log_smooth=True, h_min_log_smooth=True, checkpoint_interval=500, verbose=True, fast_bound_const=0.01):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -357,10 +357,10 @@ class YFOptimizer(object):
             np.log(param_grad_norm_squared) / np.log(10) )
 
     if self._iter > self._curv_win_width and global_state['grad_norm_squared'] >= self._exploding_grad_elim_fac * self._h_max:
-	self._exploding_grad_detected = True
-        self._exploding_grad_clip_thresh= np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )
+      self._exploding_grad_detected = True
+      self._exploding_grad_clip_thresh= np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )
     else:
-        self._exploding_grad_detected = False      
+      self._exploding_grad_detected = False      
 
   
     global_state['grad_norm_squared_avg'] = \
@@ -400,6 +400,7 @@ class YFOptimizer(object):
 
   def get_lr(self):
     self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps)
+    self._lr_t = min(self._lr_t, self._lr_t * (self._iter + 1) / float(10 * self._curv_win_width) )
     return
 
 
@@ -438,7 +439,7 @@ class YFOptimizer(object):
 
   def get_mu(self):
     root = self.get_cubic_root()
-    dr = (self._h_max + eps) / (self._h_min + eps)
+    dr = max( (self._h_max + eps) / (self._h_min + eps), 1.0 + eps)
     self._mu_t = max(root**2, ( (np.sqrt(dr) - 1) / (np.sqrt(dr) + 1) )**2 )
     return 
 
