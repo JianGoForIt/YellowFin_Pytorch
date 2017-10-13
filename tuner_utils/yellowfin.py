@@ -85,8 +85,8 @@ class YFOptimizer(object):
       logging.debug('Verbose mode with debugging info logged.')
 
     # clip exploding gradient
-    self._exploding_grad_clip_thresh=1e6
-    self._exploding_grad_clip_target_value = 1e6
+    self._exploding_grad_clip_thresh=1e3
+    self._exploding_grad_clip_target_value = 1e3
     self._exploding_grad_detected = False
 
   def state_dict(self):
