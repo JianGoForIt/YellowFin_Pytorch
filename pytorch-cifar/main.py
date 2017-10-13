@@ -176,7 +176,7 @@ def train(epoch, opt,
         optimizer.step()
 
 
-        #loss_list.append(loss.data[0])
+        loss_list.append(loss.data[0])
         local_curv_list.append(opt._global_state['grad_norm_squared'] )
         max_curv_list.append(opt._h_max)
         min_curv_list.append(opt._h_min)
