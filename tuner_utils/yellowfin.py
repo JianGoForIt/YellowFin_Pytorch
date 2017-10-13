@@ -87,6 +87,7 @@ class YFOptimizer(object):
     # clip exploding gradient
     self._exploding_grad_clip_thresh=1e6
     self._exploding_grad_clip_target_value = 1e6
+    self._exploding_grad_detected = False
 
   def state_dict(self):
     # for checkpoint saving
@@ -370,8 +371,8 @@ class YFOptimizer(object):
       self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )          
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
-    else:
-      self._exploding_grad_detected = False
+      else:
+        self._exploding_grad_detected = False
 
   
     global_state['grad_norm_squared_avg'] = \
