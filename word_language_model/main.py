@@ -275,7 +275,7 @@ try:
         optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.9)
     elif args.opt_method == "YF":
         print("using YF")
-        optimizer = YFOptimizer(model.parameters(), lr=1.0, mu=0.0, exploding_grad_elim_fac=args.lr_thresh)
+        optimizer = YFOptimizer(model.parameters(), lr=0.0001, mu=0.0, exploding_grad_elim_fac=args.lr_thresh)
     elif args.opt_method == "Adagrad":
         print("using Adagrad")
         optimizer = torch.optim.Adagrad(model.parameters(), lr)
