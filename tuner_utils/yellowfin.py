@@ -43,6 +43,8 @@ class YFOptimizer(object):
       Example on using lr_factor can be found here:
       https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109
     '''
+    lr = 0.0001
+    mu = 0.0
     self._lr = lr
     self._mu = mu
     self._lr_t = lr
