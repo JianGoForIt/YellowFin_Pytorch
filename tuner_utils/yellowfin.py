@@ -359,11 +359,17 @@ class YFOptimizer(object):
           logging.debug("param grad squared gid %d, pid %d, %f, %f", group_id, p_id, param_grad_norm_squared,
             np.log(param_grad_norm_squared) / np.log(10) )
 
-    if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
+    #if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
+    #  self._exploding_grad_detected = True
+    #  self._exploding_grad_clip_target_val = np.sqrt(np.sqrt(self._exploding_grad_clip_thresh) * np.sqrt(self._h_min) )
+    #else:
+    #  self._exploding_grad_detected = False      
+
+    if self._iter >= 1 and global_state['grad_norm_squared'] >= self._exploding_grad_elim_fac * self._h_max:
       self._exploding_grad_detected = True
-      self._exploding_grad_clip_target_val = np.sqrt(np.sqrt(self._exploding_grad_clip_thresh) * np.sqrt(self._h_min) )
+      self._exploding_grad_clip_target_val = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )
     else:
-      self._exploding_grad_detected = False      
+      self._exploding_grad_detected = False
 
   
     global_state['grad_norm_squared_avg'] = \
@@ -510,7 +516,6 @@ class YFOptimizer(object):
     if self._exploding_grad_detected:
       print "exploding gradient detected ", np.sqrt(self._exploding_grad_clip_thresh), np.sqrt(self._global_state['grad_norm_squared'] ), self._exploding_grad_clip_target_value 
       torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_clip_target_value + eps)
-    self._exploding_grad_clip_thresh = min(self._exploding_grad_clip_thresh * self._exploding_grad_elim_fac, self._exploding_grad_elim_fac * self._h_max)      
 
     self._optimizer.step()
 

@@ -7,7 +7,7 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
              lr_g_norm_list, lr_g_norm_squared_list, lr_list, lr_t_list, dr_list, 
              mu_list, mu_t_list, grad_avg_norm_list,
              dist_list, grad_var_list, move_lr_g_norm_list, move_lr_g_norm_squared_list, 
-             fast_view_act_list, lr_grad_norm_clamp_act_list):
+             fast_view_act_list, lr_grad_norm_clamp_act_list, clip_thresh_list=[] ):
     def running_mean(x, N):
         cumsum = np.cumsum(np.insert(x, 0, 0)) 
         return (cumsum[N:] - cumsum[:-N]) / N 
@@ -26,6 +26,7 @@ def plot_func(log_dir, iter_id, loss_list, local_curv_list, max_curv_list, min_c
     plt.figure()
     plt.semilogy(lr_g_norm_list, label="lr * grad norm")
     plt.semilogy(local_curv_list, label="local curvature")
+    plt.semilogy(clip_thresh_list, label="grad norm squared clip thresh")
     plt.semilogy(max_curv_list, label="max curv in win")
     plt.semilogy(min_curv_list, label="min curv in win")
 #         plt.semilogy(clip_norm_base_list, label="Clipping Thresh.")

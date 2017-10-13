@@ -187,6 +187,8 @@ move_lr_g_norm_squared_list = []
 lr_grad_norm_clamp_act_list = []
 fast_view_act_list = [] 
 
+clip_thresh_list = []
+
 for epoch in range(num_epochs):
     i = 0
     for x in train:
@@ -229,7 +231,9 @@ for epoch in range(num_epochs):
         lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
         move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
         move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
-       
+        clip_thresh_list.append(opt._exploding_grad_clip_target_value**2)
+
+
         if not (i == 0 and epoch == 0):
             lr_t_list.append(opt._lr_t)
             mu_t_list.append(opt._mu_t)
@@ -251,7 +255,7 @@ for epoch in range(num_epochs):
                 grad_avg_norm_list=[],
                 dist_list=dist_list, grad_var_list=grad_var_list, 
                 move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
-                fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list)
+                fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list, clip_thresh_list=clip_thresh_list)
             print "figure plotted"
 
 
@@ -266,6 +270,11 @@ for epoch in range(num_epochs):
                 np.savetxt(f, mu_t_list)
             with open(log_dir + "/lr_t.txt", "w") as f:
                 np.savetxt(f, lr_t_list)
+
+            with open(log_dir + "/clip_thresh.txt") as f:
+                clip_thresh_array = np.array( [clip_thresh_list, local_curv_list] ).T
+                np.savetxt(f, clip_thresh_array)
+
         #if (i + 1) % 1000 == 0:
         #    evaluate_valid(valid) 
 
