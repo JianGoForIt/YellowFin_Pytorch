@@ -11,7 +11,7 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.0001, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0, exploding_grad_elim_fac=2.0,
-    h_max_log_smooth=False, h_min_log_smooth=True, checkpoint_interval=500, verbose=True, fast_bound_const=0.01):
+    h_max_log_smooth=True, h_min_log_smooth=True, checkpoint_interval=500, verbose=True, fast_bound_const=0.01):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -365,9 +365,11 @@ class YFOptimizer(object):
     #else:
     #  self._exploding_grad_detected = False      
 
-    if self._iter >= 1 and global_state['grad_norm_squared'] >= self._exploding_grad_elim_fac * self._h_max:
-      self._exploding_grad_detected = True
-      self._exploding_grad_clip_target_val = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )
+    if self._iter >= 1:
+      self._exploding_grad_clip_thresh = self._exploding_grad_elim_fac * self._h_max
+      self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )          
+      if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
+        self._exploding_grad_detected = True
     else:
       self._exploding_grad_detected = False
 
@@ -388,6 +390,7 @@ class YFOptimizer(object):
     self.dist_to_opt()
 
     if self._verbose:
+      logging.debug("h_max %f, %f", self._h_max, np.log(self._h_max) )
       logging.debug("h_min %f, %f", self._h_min, np.log(self._h_min) )
       logging.debug("dist %f, %f", self._dist_to_opt, np.log(self._dist_to_opt) )
       logging.debug("var %f, %f", self._grad_var, np.log(self._grad_var) )

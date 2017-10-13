@@ -271,7 +271,7 @@ for epoch in range(num_epochs):
             with open(log_dir + "/lr_t.txt", "w") as f:
                 np.savetxt(f, lr_t_list)
 
-            with open(log_dir + "/clip_thresh.txt") as f:
+            with open(log_dir + "/clip_thresh.txt", "w") as f:
                 clip_thresh_array = np.array( [clip_thresh_list, local_curv_list] ).T
                 np.savetxt(f, clip_thresh_array)
 
