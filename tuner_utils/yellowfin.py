@@ -481,7 +481,7 @@ class YFOptimizer(object):
 
     # loose threshold for preventing exploding gradients from destroying statistics
     if self._iter > 1:
-      torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(100.0 * self._h_max) + eps)
+      torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._stat_protect_fac * self._h_max) + eps)
 
 
     try:
