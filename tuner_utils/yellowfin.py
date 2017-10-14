@@ -368,8 +368,8 @@ class YFOptimizer(object):
 
     if self._iter >= 1:
       self._exploding_grad_clip_thresh = self._h_max
-#      self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )         
-      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
+      self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )         
+#      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
       else:
