@@ -10,8 +10,8 @@ eps = 1e-6
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.0001, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=False, lr_grad_norm_thresh=1.0, exploding_grad_elim_fac=2.0,
-    h_max_log_smooth=True, h_min_log_smooth=True, checkpoint_interval=500, verbose=True, fast_bound_const=0.01):
+    auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=True, h_min_log_smooth=True, 
+    checkpoint_interval=500, verbose=True, stat_protect_fac=100.0):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -35,6 +35,9 @@ class YFOptimizer(object):
       In practice, if turned on, we enforce lr * sqrt(smoothed ||grad||^2) 
       to be less than 2x of the minimal value of historical value on smoothed || lr * grad ||. 
       This feature is turned off by default.
+      checkpoint_interval: interval to do checkpointing. For potential recovery from crashing.
+      stat_protect_fac: a loose hard adaptive threshold over ||grad||^2. It is to protect stat
+      from being destropied by exploding gradient.
     Other features:
       If you want to manually control the learning rates, self.lr_factor is
       an interface to the outside, it is an multiplier for the internal learning rate
@@ -66,13 +69,6 @@ class YFOptimizer(object):
     # for decaying learning rate and etc.
     self._lr_factor = 1.0
 
-    # lr threshold
-    self._lr_grad_norm_thresh = lr_grad_norm_thresh
-    # gradient thresholding
-    self._exploding_grad_elim_fac = exploding_grad_elim_fac
-    # fast bound threshold
-    self._fast_bound_const = fast_bound_const
-
     # smoothing options
     self._h_max_log_smooth = h_max_log_smooth
     self._h_min_log_smooth = h_min_log_smooth
@@ -87,6 +83,7 @@ class YFOptimizer(object):
     # clip exploding gradient
     self._exploding_grad_clip_thresh=1e3
     self._exploding_grad_clip_target_value = 1e3
+    self._stat_protect_fac = stat_protect_fac
     self._exploding_grad_detected = False
 
   def state_dict(self):
@@ -190,24 +187,12 @@ class YFOptimizer(object):
     if self._h_min_log_smooth:
       global_state["h_min_avg"] = \
           global_state["h_min_avg"] * beta + (1 - beta) * torch.min(np.log(curv_win[:valid_end] + eps) )
-      #if self._iter > self._curv_win_width:
-      #  global_state["h_min_avg"] = min(global_state["h_min_avg"] + np.log(self._exploding_grad_elim_fac), \
-      #    global_state["h_min_avg"] * beta + (1 - beta) * torch.min(np.log(curv_win[:valid_end] + eps) ) )
-      #else:
-      #  global_state["h_min_avg"] = \
-      #    global_state["h_min_avg"] * beta + (1 - beta) * torch.min(np.log(curv_win[:valid_end] + eps) )
     else:
       global_state["h_min_avg"] = \
         global_state["h_min_avg"] * beta + (1 - beta) * torch.min(curv_win[:valid_end] )
     if self._h_max_log_smooth:
       global_state["h_max_avg"] = \
         global_state["h_max_avg"] * beta + (1 - beta) * torch.max(np.log(curv_win[:valid_end] + eps) )
-      #if self._iter > self._curv_win_width:
-      #  global_state["h_max_avg"] = min(global_state["h_max_avg"] + np.log(self._exploding_grad_elim_fac), \
-      #    global_state["h_max_avg"] * beta + (1 - beta) * torch.max(np.log(curv_win[:valid_end] + eps) ) )
-      #else:
-      #  global_state["h_max_avg"] = \
-      #    global_state["h_max_avg"] * beta + (1 - beta) * torch.max(np.log(curv_win[:valid_end] + eps) ) 
     else:
       global_state["h_max_avg"] = \
         global_state["h_max_avg"] * beta + (1 - beta) * torch.max(curv_win[:valid_end] )
@@ -357,19 +342,13 @@ class YFOptimizer(object):
 
         if self._verbose:
           logging.debug("Iteration  %f", self._iter) 
-          logging.debug("param grad squared gid %d, pid %d, %f, %f", group_id, p_id, param_grad_norm_squared,
-            np.log(param_grad_norm_squared) / np.log(10) )
-
-    #if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
-    #  self._exploding_grad_detected = True
-    #  self._exploding_grad_clip_target_val = np.sqrt(np.sqrt(self._exploding_grad_clip_thresh) * np.sqrt(self._h_min) )
-    #else:
-    #  self._exploding_grad_detected = False      
+          logging.debug("param grad squared gid %d, pid %d, %f, log scale: %f", group_id, p_id, param_grad_norm_squared,
+            np.log(param_grad_norm_squared + 1e-10) / np.log(10) )   
 
     if self._iter >= 1:
       self._exploding_grad_clip_thresh = self._h_max
       self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )         
-#      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
+      # self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
       else:
@@ -380,8 +359,8 @@ class YFOptimizer(object):
       global_state['grad_norm_squared_avg'] * beta + (1 - beta) * global_state['grad_norm_squared']
         
     if self._verbose:
-      logging.debug("overall grad norm squared %f, %f", 
-        global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] ) / np.log(10))
+      logging.debug("overall grad norm squared %f, log scale: %f", 
+        global_state['grad_norm_squared'], np.log(global_state['grad_norm_squared'] + 1e-10) / np.log(10))
 
 
     if self._sparsity_debias:
@@ -392,10 +371,10 @@ class YFOptimizer(object):
     self.dist_to_opt()
 
     if self._verbose:
-      logging.debug("h_max %f, %f", self._h_max, np.log(self._h_max) )
-      logging.debug("h_min %f, %f", self._h_min, np.log(self._h_min) )
-      logging.debug("dist %f, %f", self._dist_to_opt, np.log(self._dist_to_opt) )
-      logging.debug("var %f, %f", self._grad_var, np.log(self._grad_var) )
+      logging.debug("h_max %f ", self._h_max)
+      logging.debug("h_min %f ", self._h_min)
+      logging.debug("dist %f ", self._dist_to_opt)
+      logging.debug("var %f ", self._grad_var)
 
     if self._iter > 0:
       self.get_mu()    
@@ -414,7 +393,8 @@ class YFOptimizer(object):
 
   def get_lr(self):
     self._lr_t = (1.0 - math.sqrt(self._mu_t) )**2 / (self._h_min + eps)
-    self._lr_t = min(self._lr_t, self._lr_t * (self._iter + 1) / float(10 * self._curv_win_width) )
+    # slow start of lr to prevent huge lr when there is only a few iteration finished
+    self._lr_t = min(self._lr_t, self._lr_t * (self._iter + 1) / float(10.0 * self._curv_win_width) )
     return
 
 
@@ -464,15 +444,10 @@ class YFOptimizer(object):
       #group['momentum'] = max(self._mu, self._mu_t)
       if self._force_non_inc_step == False:
         group['lr'] = self._lr_t * self._lr_factor
-        #group['lr'] = min(self._lr_t, self._lr) * self._lr_factor
-        #group['lr'] = self._lr_factor * min(self._fast_bound_const/( (math.sqrt(self._global_state["grad_norm_squared"] ) + math.sqrt(self._h_min) )**2 + eps), min(self._lr, 
-         # self._lr_grad_norm_thresh / (math.sqrt(self._global_state["grad_norm_squared"] ) + eps) ) )
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
         # in YFOptimizer.__init__ for more details
-        # DEBUG
-        assert 0
         self.lr_grad_norm_avg()
         debias_factor = self.zero_debias_factor()
         group['lr'] = min(self._lr * self._lr_factor,
@@ -504,35 +479,41 @@ class YFOptimizer(object):
       # do not clip the first iteration
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
 
-    # threshold for preventing exploding gradients
+    # loose threshold for preventing exploding gradients from destroying statistics
     if self._iter > 1:
       torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(100.0 * self._h_max) + eps)
 
 
-    #try:
-    # before appply
-    self.before_apply()
+    try:
+      # before appply
+      self.before_apply()
 
-    # update learning rate and momentum
-    self.update_hyper_param()
+      # update learning rate and momentum
+      self.update_hyper_param()
 
-    # protection from exploding gradient
-    logging.debug("exploding gradient: %f , %f, %f, %r", np.sqrt(self._exploding_grad_clip_thresh), np.sqrt(self._global_state['grad_norm_squared'] ), self._exploding_grad_clip_target_value, self._exploding_grad_detected)
-    if self._exploding_grad_detected:
-      print "exploding gradient detected ", np.sqrt(self._exploding_grad_clip_thresh), np.sqrt(self._global_state['grad_norm_squared'] ), self._exploding_grad_clip_target_value 
-      torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_clip_target_value + eps)
+      # periodically save model and states
+      if self._iter % self._checkpoint_interval == 1:
+        self._state_checkpoint = copy.deepcopy(self.state_dict() )
 
-    self._optimizer.step()
+      # protection from exploding gradient
+      if self._exploding_grad_detected or self._verbose:
+        logging.warning("exploding gradient detected: grad norm detection thresh %f , grad norm %f, grad norm after clip%f", 
+          np.sqrt(self._exploding_grad_clip_thresh), 
+          np.sqrt(self._global_state['grad_norm_squared'] ), 
+          self._exploding_grad_clip_target_value)
+      if self._exploding_grad_detected:
+        print("exploding gradient detected: grad norm detection thresh ", np.sqrt(self._exploding_grad_clip_thresh), 
+          "grad norm", np.sqrt(self._global_state['grad_norm_squared'] ), 
+          "grad norm after clip", self._exploding_grad_clip_target_value)
+        torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_clip_target_value + eps)
 
-    # periodically save model and states
-    if self._iter % self._checkpoint_interval == 1:
-      self._state_checkpoint = copy.deepcopy(self.state_dict() )
+      self._optimizer.step()
 
-    self._iter += 1
-    #except:
-    #  # load the last checkpoint
-    #  logging.warning("Numerical issue triggered restore with backup states. Resumed from last internal checkpoint.")
-    #  self.load_state_dict(self._state_checkpoint)
+      self._iter += 1
+    except:
+      # load the last checkpoint
+      logging.warning("Numerical issue triggered restore with backup. Resumed from last checkpoint.")
+      self.load_state_dict(self._state_checkpoint)
 
     return 
 

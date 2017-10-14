@@ -87,8 +87,7 @@ rnn.cuda()
 criterion = nn.CrossEntropyLoss()
 
 #opt = torch.optim.Adam(rnn.parameters(), lr=lr)
-#opt = YFOptimizer(rnn.parameters(), fast_bound_const=fast_bound_const)
-opt = YFOptimizer(rnn.parameters(), exploding_grad_elim_fac=args.fast_bound_const)
+opt = YFOptimizer(rnn.parameters() )
 
 
 def evaluate_valid(valid):
