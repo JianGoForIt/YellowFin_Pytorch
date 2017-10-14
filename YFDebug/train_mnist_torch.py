@@ -194,9 +194,9 @@ for epoch in range(num_epochs):
         t = -time.time()
         #import ipdb; ipdb.set_trace()
         
-        if not (i == 0 and epoch == 0):       
-            fast_view_act_list.append(opt._fast_bound_const/( (math.sqrt(opt._global_state["grad_norm_squared"] ) + math.sqrt(opt._h_min) )**2 + 1e-6))
-            lr_grad_norm_clamp_act_list.append(opt._lr_grad_norm_thresh / (math.sqrt(opt._global_state["grad_norm_squared"] ) + 1e-6) )
+        #if not (i == 0 and epoch == 0):       
+            #fast_view_act_list.append(opt._fast_bound_const/( (math.sqrt(opt._global_state["grad_norm_squared"] ) + math.sqrt(opt._h_min) )**2 + 1e-6))
+            #lr_grad_norm_clamp_act_list.append(opt._lr_grad_norm_thresh / (math.sqrt(opt._global_state["grad_norm_squared"] ) + 1e-6) )
 
         x = numpy.asarray(x, dtype=numpy.float32)
         x = torch.from_numpy(x)
