@@ -1,8 +1,8 @@
-python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_2_h_max_log_test_slow_start_10_win --cuda --seed=2
+python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/seed_2_h_max_log_lr_t_mu_t_test_spike_warm_start_clip_h_max_100_hard_geo_mean --cuda --seed=2
 
-python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_h_max_log_test_slow_start_10_win --cuda --seed=1
+#python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_h_max_log_test_slow_start_10_win --cuda --seed=1
 
-python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_3_h_max_log_test_slow_start_10_win --cuda --seed=3
+#python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_3_h_max_log_test_slow_start_10_win --cuda --seed=3
 #python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_fast_view_clamp_0.01 --cuda --seed=1 --lr_thresh=0.01
 
 #python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_min_lr_t_lr_max_mu_t_mu_h_max_linear_smooth_exploding_clip_fac_2 --cuda --seed=1 --lr_thresh=2.0
