@@ -367,8 +367,9 @@ class YFOptimizer(object):
     #  self._exploding_grad_detected = False      
 
     if self._iter >= 1:
-      self._exploding_grad_clip_thresh = self._exploding_grad_elim_fac * self._h_max
-      self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )          
+      self._exploding_grad_clip_thresh = self._h_max
+#      self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )         
+      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
       else:
@@ -504,8 +505,8 @@ class YFOptimizer(object):
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
 
     # threshold for preventing exploding gradients
-    #if self._iter > self._curv_win_width:
-    #  torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._exploding_grad_elim_fac * self._h_max) + eps)
+    if self._iter > 1:
+      torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(100.0 * self._h_max) + eps)
 
 
     #try:
