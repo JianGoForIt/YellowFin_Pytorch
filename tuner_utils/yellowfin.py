@@ -186,7 +186,7 @@ class YFOptimizer(object):
       global_state["h_max_avg_log_smooth"] = 0.0
       self._h_min = 0.0
       self._h_max = 0.0
-      self._h_max_log_smooth = 0.0
+      self._h_max_log_smooth_val = 0.0
     if self._h_min_log_smooth:
       global_state["h_min_avg"] = \
           global_state["h_min_avg"] * beta + (1 - beta) * torch.min(np.log(curv_win[:valid_end] + eps) )
@@ -216,7 +216,7 @@ class YFOptimizer(object):
         self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
       else:
         self._h_max = global_state["h_max_avg"] / debias_factor
-      self._h_max_log_smooth = np.exp(global_state["h_max_avg_log_smooth"] / debias_factor)
+      self._h_max_log_smooth_val = np.exp(global_state["h_max_avg_log_smooth"] / debias_factor)
     else:
       if self._h_min_log_smooth:
         self._h_min = np.exp(global_state["h_min_avg"] )
@@ -226,12 +226,12 @@ class YFOptimizer(object):
         self._h_max = np.exp(global_state["h_max_avg"] )
       else:
         self._h_max = global_state["h_max_avg"]
-      self._h_max_log_smooth = np.exp(global_state["h_max_avg_log_smooth"])
+      self._h_max_log_smooth_val = np.exp(global_state["h_max_avg_log_smooth"])
 
     if self._sparsity_debias:
       self._h_min *= self._sparsity_avg
       self._h_max *= self._sparsity_avg
-      self._h_max_log_smooth *= self._sparsity_avg
+      self._h_max_log_smooth_val *= self._sparsity_avg
     return
 
 
@@ -360,9 +360,10 @@ class YFOptimizer(object):
             np.log(param_grad_norm_squared + 1e-10) / np.log(10) )   
 
     if self._iter >= 1:
-      self._exploding_grad_clip_thresh = self._h_max_log_smooth
+      self._exploding_grad_clip_thresh = self._h_max_log_smooth_val
+
       # self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max_log_smooth) * np.sqrt(self._h_min) )         
-      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
+      self._exploding_grad_clip_target_value = np.sqrt(self._h_max_log_smooth_val)
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
       else:
@@ -494,8 +495,8 @@ class YFOptimizer(object):
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
 
     # loose threshold for preventing exploding gradients from destroying statistics
-    if self._iter > 1:
-      torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._stat_protect_fac * self._h_max) + eps)
+    #if self._iter > 1:
+    #  torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._stat_protect_fac * self._h_max) + eps)
 
 
     #try:
