@@ -138,7 +138,7 @@ sigmoid = nn.Sigmoid()
 
 learning_rate = 0.0001
 print("lr thresh", args.lr_thresh)
-optimizer = YFOptimizer(mix_softmax.parameters(), beta=0.999, lr=learning_rate, mu=0.0, zero_debias=False, clip_thresh=None, 
+optimizer = YFOptimizer(mix_softmax.parameters(), beta=0.999, lr=learning_rate, mu=0.0, zero_debias=True, clip_thresh=None, 
                         auto_clip_fac=None, curv_win_width=20, force_non_inc_step=False)
 
 # word_optmizer = YFOptimizer(word_attn.parameters(), lr=learning_rate, mu=0.0, auto_clip_fac=2.0)
@@ -232,9 +232,9 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
 
 #             optimizer._lr = 0.5
 
-	    if i > 1:	    
-              fast_view_act_list.append(4.0/( (math.sqrt(optimizer._global_state["grad_norm_squared"] ) + math.sqrt(optimizer._h_min) )**2 + 1e-6))
-              lr_grad_norm_clamp_act_list.append(optimizer._lr_grad_norm_thresh / (math.sqrt(optimizer._global_state["grad_norm_squared"] ) + 1e-6) )
+	    #if i > 1:	    
+             # fast_view_act_list.append(4.0/( (math.sqrt(optimizer._global_state["grad_norm_squared"] ) + math.sqrt(optimizer._h_min) )**2 + 1e-6))
+              #lr_grad_norm_clamp_act_list.append(optimizer._lr_grad_norm_thresh / (math.sqrt(optimizer._global_state["grad_norm_squared"] ) + 1e-6) )
 
             loss, grad_norm_250 = train_data(tokens, features, labels, word_attn_model, sent_attn_model, optimizer, loss_criterion, cuda=use_cuda, lstm=args.use_lstm)
             loss_s, gn_s = loss, grad_norm_250

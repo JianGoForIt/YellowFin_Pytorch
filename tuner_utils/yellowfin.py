@@ -498,36 +498,36 @@ class YFOptimizer(object):
       torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._stat_protect_fac * self._h_max) + eps)
 
 
-    try:
-      # before appply
-      self.before_apply()
+    #try:
+    # before appply
+    self.before_apply()
 
-      # update learning rate and momentum
-      self.update_hyper_param()
+    # update learning rate and momentum
+    self.update_hyper_param()
 
-      # periodically save model and states
-      if self._iter % self._checkpoint_interval == 1:
-        self._state_checkpoint = copy.deepcopy(self.state_dict() )
+    # periodically save model and states
+    if self._iter % self._checkpoint_interval == 1:
+      self._state_checkpoint = copy.deepcopy(self.state_dict() )
 
-      # protection from exploding gradient
-      if self._exploding_grad_detected or self._verbose:
-        logging.warning("exploding gradient detected: grad norm detection thresh %f , grad norm %f, grad norm after clip%f", 
-          np.sqrt(self._exploding_grad_clip_thresh), 
-          np.sqrt(self._global_state['grad_norm_squared'] ), 
-          self._exploding_grad_clip_target_value)
-      if self._exploding_grad_detected:
-        print("exploding gradient detected: grad norm detection thresh ", np.sqrt(self._exploding_grad_clip_thresh), 
-          "grad norm", np.sqrt(self._global_state['grad_norm_squared'] ), 
-          "grad norm after clip", self._exploding_grad_clip_target_value)
-        torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_clip_target_value + eps)
+    # protection from exploding gradient
+    if self._exploding_grad_detected or self._verbose:
+      logging.warning("exploding gradient detected: grad norm detection thresh %f , grad norm %f, grad norm after clip%f", 
+        np.sqrt(self._exploding_grad_clip_thresh), 
+        np.sqrt(self._global_state['grad_norm_squared'] ), 
+        self._exploding_grad_clip_target_value)
+    if self._exploding_grad_detected:
+      print("exploding gradient detected: grad norm detection thresh ", np.sqrt(self._exploding_grad_clip_thresh), 
+        "grad norm", np.sqrt(self._global_state['grad_norm_squared'] ), 
+        "grad norm after clip", self._exploding_grad_clip_target_value)
+      torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_clip_target_value + eps)
 
-      self._optimizer.step()
+    self._optimizer.step()
 
-      self._iter += 1
-    except:
-      # load the last checkpoint
-      logging.warning("Numerical issue triggered restore with backup. Resumed from last checkpoint.")
-      self.load_state_dict(self._state_checkpoint)
+    self._iter += 1
+    #except:
+    #  # load the last checkpoint
+    #  logging.warning("Numerical issue triggered restore with backup. Resumed from last checkpoint.")
+    #  self.load_state_dict(self._state_checkpoint)
 
     return 
 
