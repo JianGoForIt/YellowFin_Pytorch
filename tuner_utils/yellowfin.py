@@ -10,7 +10,7 @@ eps = 1e-6
 class YFOptimizer(object):
   def __init__(self, var_list, lr=0.0001, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
-    auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=True, h_min_log_smooth=True, 
+    auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=False, h_min_log_smooth=True, 
     checkpoint_interval=500, verbose=True, stat_protect_fac=100.0):
     '''
     clip thresh is the threshold value on ||lr * gradient||
@@ -182,8 +182,11 @@ class YFOptimizer(object):
     if self._iter == 0:
       global_state["h_min_avg"] = 0.0
       global_state["h_max_avg"] = 0.0
+      # h_max avg log smooth is for slow increasing clipping thresh
+      global_state["h_max_avg_log_smooth"] = 0.0
       self._h_min = 0.0
       self._h_max = 0.0
+      self._h_max_log_smooth = 0.0
     if self._h_min_log_smooth:
       global_state["h_min_avg"] = \
           global_state["h_min_avg"] * beta + (1 - beta) * torch.min(np.log(curv_win[:valid_end] + eps) )
@@ -196,6 +199,13 @@ class YFOptimizer(object):
     else:
       global_state["h_max_avg"] = \
         global_state["h_max_avg"] * beta + (1 - beta) * torch.max(curv_win[:valid_end] )
+
+    if self._h_max_log_smooth:
+      global_state["h_max_avg_log_smooth"] = global_state["h_max_avg"]
+    else:
+      global_state["h_max_avg_log_smooth"] = \
+        global_state["h_max_avg_log_smooth"] * beta + (1 - beta) * torch.max(np.log(curv_win[:valid_end] + eps) )
+
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
       if self._h_min_log_smooth:
@@ -206,6 +216,7 @@ class YFOptimizer(object):
         self._h_max = np.exp(global_state["h_max_avg"] / debias_factor)
       else:
         self._h_max = global_state["h_max_avg"] / debias_factor
+      self._h_max_log_smooth = np.exp(global_state["h_max_avg_log_smooth"] / debias_factor)
     else:
       if self._h_min_log_smooth:
         self._h_min = np.exp(global_state["h_min_avg"] )
@@ -215,9 +226,12 @@ class YFOptimizer(object):
         self._h_max = np.exp(global_state["h_max_avg"] )
       else:
         self._h_max = global_state["h_max_avg"]
+      self._h_max_log_smooth = np.exp(global_state["h_max_avg_log_smooth"])
+
     if self._sparsity_debias:
       self._h_min *= self._sparsity_avg
       self._h_max *= self._sparsity_avg
+      self._h_max_log_smooth *= self._sparsity_avg
     return
 
 
@@ -346,9 +360,9 @@ class YFOptimizer(object):
             np.log(param_grad_norm_squared + 1e-10) / np.log(10) )   
 
     if self._iter >= 1:
-      self._exploding_grad_clip_thresh = self._h_max
-      self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )         
-      # self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
+      self._exploding_grad_clip_thresh = self._h_max_log_smooth
+      # self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max_log_smooth) * np.sqrt(self._h_min) )         
+      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
       else:
