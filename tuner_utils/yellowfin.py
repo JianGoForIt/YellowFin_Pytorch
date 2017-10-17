@@ -348,7 +348,7 @@ class YFOptimizer(object):
     if self._iter >= 1:
       self._exploding_grad_clip_thresh = self._h_max
       #self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )         
-      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)
+      self._exploding_grad_clip_target_value = np.sqrt(self._h_max)    
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
       else:
@@ -496,7 +496,7 @@ class YFOptimizer(object):
         self._state_checkpoint = copy.deepcopy(self.state_dict() )
 
       # protection from exploding gradient
-      if self._exploding_grad_detected or self._verbose:
+      if self._exploding_grad_detected and self._verbose:
         logging.warning("exploding gradient detected: grad norm detection thresh %f , grad norm %f, grad norm after clip%f", 
           np.sqrt(self._exploding_grad_clip_thresh), 
           np.sqrt(self._global_state['grad_norm_squared'] ), 
