@@ -281,7 +281,7 @@ for epoch in range(num_epochs):
             with open(log_dir + "/h_max.txt", "w") as f:
 		np.savetxt(f, np.array(max_curv_list))
 
-            with open(log_dir + "unclip_g_norm.txt", "w") as f:
+            with open(log_dir + "/unclip_g_norm.txt", "w") as f:
 	    	np.savetxt(f, np.array(unclip_g_norm_list))
 
         #if (i + 1) % 1000 == 0:
