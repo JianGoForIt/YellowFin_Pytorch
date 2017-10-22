@@ -31,6 +31,7 @@ parser.add_argument('--logdir', type=str, default="./")
 parser.add_argument('--opt_method', type=str, default="YF")
 parser.add_argument('--lr_thresh', type=float, default=1.0)
 parser.add_argument('--seed', type=int, default=1)
+parser.add_argument('--lr_factor', type=float, default=1.0)
 args = parser.parse_args()
 
 import logging
@@ -102,8 +103,9 @@ elif args.opt_method == "Adam":
     print("using Adam")
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 elif args.opt_method == "YF":
-    print("using YF")
-    optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4)
+    print("using YF, lr fac ", args.lr_factor)
+    optimizer = YFOptimizer(net.parameters(), weight_decay=5e-4)
+    optimizer.set_lr_factor(args.lr_factor)
 else:
     raise Exception("Optimizer not supported")
 # Training
