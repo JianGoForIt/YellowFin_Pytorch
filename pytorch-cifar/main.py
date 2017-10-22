@@ -178,23 +178,24 @@ def train(epoch, opt,
         optimizer.step()
 
 
-        loss_list.append(loss.data[0])
-        local_curv_list.append(opt._global_state['grad_norm_squared'] )
-        max_curv_list.append(opt._h_max)
-        min_curv_list.append(opt._h_min)
-        lr_list.append(opt._lr)
-        mu_list.append(opt._mu)
-        dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
-        dist_list.append(opt._dist_to_opt)
-        grad_var_list.append(opt._grad_var)
+        #loss_list.append(loss.data[0])
+        if args.opt_method == "YF":
+          local_curv_list.append(opt._global_state['grad_norm_squared'] )
+          max_curv_list.append(opt._h_max)
+          min_curv_list.append(opt._h_min)
+          lr_list.append(opt._lr)
+          mu_list.append(opt._mu)
+          dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
+          dist_list.append(opt._dist_to_opt)
+          grad_var_list.append(opt._grad_var)
 
-        lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
-        lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
-        move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
-        move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
+          lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+          lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
+          move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+          move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
 
-        lr_t_list.append(opt._lr_t)
-        mu_t_list.append(opt._mu_t)
+          lr_t_list.append(opt._lr_t)
+          mu_t_list.append(opt._mu_t)
 
         loss_list.append(loss.data[0] )
         train_loss += loss.data[0]
