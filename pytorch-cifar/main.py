@@ -341,7 +341,7 @@ for epoch in range(start_epoch, start_epoch+200):
       lr_grad_norm_clamp_act_list,\
       fast_view_act_list)
 
-    if epoch % 10 == 0 or epoch == 5:
+    if (epoch % 10 == 0 or epoch == 5) and args.opt_method=="YF" :
         plot_func(log_dir=args.logdir, iter_id=epoch, loss_list=loss_list,
           local_curv_list=local_curv_list, max_curv_list=max_curv_list,
           min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list,
