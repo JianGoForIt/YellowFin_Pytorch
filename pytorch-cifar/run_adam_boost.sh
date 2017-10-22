@@ -1,7 +1,7 @@
 base=0.001
 for seed in 1 2 3
 do
-  for fac in 0.333 2.0 3.0
+  for fac in 0.333
   do
     lr=$(echo ${base}*${fac} | bc -l)
     echo sanity check ${seed} ${fac}
