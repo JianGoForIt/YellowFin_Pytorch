@@ -54,6 +54,7 @@ parser.add_argument('--logdir', type=str, default='.',
 parser.add_argument('--opt_method', type=str, default='YF',
                     help='select the optimizer you are using')
 parser.add_argument('--lr_thresh', type=float, default=1.0)
+parser.add_argument('--lr_factor', type=float, default=1.0)
 args = parser.parse_args()
 
 if not os.path.isdir(args.logdir):
@@ -276,6 +277,8 @@ try:
     elif args.opt_method == "YF":
         print("using YF")
         optimizer = YFOptimizer(model.parameters() )
+        optimizer.set_lr_factor(args.lr_factor)
+        print("lr fac ", args.lr_factor)
     elif args.opt_method == "Adagrad":
         print("using Adagrad")
         optimizer = torch.optim.Adagrad(model.parameters(), lr)

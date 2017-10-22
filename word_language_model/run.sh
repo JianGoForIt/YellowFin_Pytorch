@@ -1,4 +1,4 @@
-python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/seed_2_h_max_log_lr_t_mu_t_test_spike_warm_start_clip_h_max_100_hard_geo_mean --cuda --seed=2
+python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/seed_2_test_boost --cuda --seed=2 --lr_factor=0.3333
 
 #python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_method=YF --logdir=./results/YF_seed_1_h_max_log_test_slow_start_10_win --cuda --seed=1
 
