@@ -188,6 +188,8 @@ fast_view_act_list = []
 
 clip_thresh_list = []
 
+unclip_g_norm_list = []
+
 for epoch in range(num_epochs):
     i = 0
     for x in train:
@@ -213,6 +215,8 @@ for epoch in range(num_epochs):
         loss.backward()
         opt.step()
 
+        # For plotting
+        unclip_g_norm_list.append(opt._unclip_grad_norm)
 
         t += time.time()
 
@@ -273,6 +277,12 @@ for epoch in range(num_epochs):
             with open(log_dir + "/clip_thresh.txt", "w") as f:
                 clip_thresh_array = np.array( [clip_thresh_list, local_curv_list] ).T
                 np.savetxt(f, clip_thresh_array)
+
+            with open(log_dir + "/h_max.txt", "w") as f:
+		np.savetxt(f, np.array(max_curv_list))
+
+            with open(log_dir + "/unclip_g_norm.txt", "w") as f:
+	    	np.savetxt(f, np.array(unclip_g_norm_list))
 
         #if (i + 1) % 1000 == 0:
         #    evaluate_valid(valid) 
