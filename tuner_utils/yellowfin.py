@@ -13,7 +13,7 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.0001, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=True, h_min_log_smooth=True, 
-    checkpoint_interval=1000, verbose=False, stat_protect_fac=100.0, 
+    checkpoint_interval=1000, verbose=True, stat_protect_fac=100.0, catestropic_move_thresh=10.0,
     use_disk_checkpoint=True, checkpoint_dir='./YF_workspace'):
     '''
     clip thresh is the threshold value on ||lr * gradient||
@@ -87,6 +87,7 @@ class YFOptimizer(object):
     self._exploding_grad_clip_thresh=1e3
     self._exploding_grad_clip_target_value = 1e3
     self._stat_protect_fac = stat_protect_fac
+    self._catastrophic_move_thresh = catastrophic_move_thresh
     self._exploding_grad_detected = False
 
     # workspace creation
@@ -480,7 +481,7 @@ class YFOptimizer(object):
         group['lr'] = self._lr_t * self._lr_factor
         # a loose clamping to prevent catastrophically large move. If the move
         # is too large, we set lr to 0 and only use the momentum to move
-        if group['lr'] * self._global_state['grad_norm_squared'] >= 100.0:
+        if group['lr'] * self._global_state['grad_norm_squared'] >= self._catastrophic_move_thresh:
           group['lr'] = 0.0
           if self._verbose:
             logging.warning("Omit catastropic move!")
