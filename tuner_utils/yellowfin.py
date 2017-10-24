@@ -13,7 +13,7 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.0001, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=True, h_min_log_smooth=True, 
-    checkpoint_interval=1000, verbose=True, stat_protect_fac=100.0, catestropic_move_thresh=10.0,
+    checkpoint_interval=1000, verbose=False, stat_protect_fac=100.0, catestropic_move_thresh=100.0,
     use_disk_checkpoint=True, checkpoint_dir='./YF_workspace'):
     '''
     clip thresh is the threshold value on ||lr * gradient||
