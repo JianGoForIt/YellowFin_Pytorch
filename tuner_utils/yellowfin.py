@@ -4,7 +4,7 @@ import torch
 import copy
 import logging
 import os
-import cPickle as cp
+import pickle as cp
 
 # eps for numerical stability
 eps = 1e-6
