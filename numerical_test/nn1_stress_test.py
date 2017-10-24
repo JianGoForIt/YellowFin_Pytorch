@@ -191,7 +191,10 @@ def train_data(iter_id, mini_batch, feature_batch, targets, word_attn_model, mix
                 if p.grad is None:
                     continue
                 # p.grad.data = np.array(float('nan') )
-                fake_value = np.zeros_like(p.grad.data.numpy() ) / 0.0
+                if cuda:
+                  fake_value = np.zeros_like(p.grad.data.cpu().numpy() ) / 0.0
+                else:
+                  fake_value = np.zeros_like(p.grad.data.numpy() ) / 0.0
                 p.grad.data.copy_(torch.Tensor(fake_value) )
         print "grad set to nan"
     if iter_id % 10 != 5 and iter_id % 10 == 7:
@@ -199,7 +202,10 @@ def train_data(iter_id, mini_batch, feature_batch, targets, word_attn_model, mix
             for p_id, p in enumerate(group['params'] ):
                 if p.grad is None:
                     continue
-                fake_value = np.ones_like(p.grad.data.numpy() ) / 0.0
+                if cuda:
+                  fake_value = np.ones_like(p.grad.data.cpu().numpy() ) / 0.0
+                else:
+                  fake_value = np.ones_like(p.grad.data.numpy() ) / 0.0
                 p.grad.data.copy_(torch.Tensor(fake_value) )
         print "grad set to inf"
 
