@@ -14,7 +14,7 @@ class YFOptimizer(object):
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=True, h_min_log_smooth=True, 
     checkpoint_interval=1000, verbose=False, stat_protect_fac=100.0, catastrophic_move_thresh=100.0,
-    use_disk_checkpoint=True, checkpoint_dir='./YF_workspace'):
+    use_disk_checkpoint=False, checkpoint_dir='./YF_workspace'):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
