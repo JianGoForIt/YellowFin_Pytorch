@@ -30,7 +30,7 @@ Note YellowFin is tested with PyTorch v0.1.12 for compatibility. It is tested un
 The experiments on 110 layer ResNet with CIFAR10 and 164 layer ResNet with CIFAR100 can be launched using
 ```
 cd pytorch-cifar
-python main.py --lr=1.0 --mu=0.0 --logdir=path_to_logs --opt_method=YF
+python main.py --logdir=path_to_logs --opt_method=YF
 ```
 
 ### Run Penn Treebank tied LSTM experiments
