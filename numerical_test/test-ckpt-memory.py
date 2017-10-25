@@ -52,7 +52,7 @@ if args.debug:
 # In[2]:
 
 import sys
-sys.path.append("../tuner_utils")
+sys.path.append("./tuner_utils")
 from yellowfin import YFOptimizer
 from debug_plot import plot_func
 
@@ -66,9 +66,9 @@ num_classes = 1
 
 # In[4]:
 if (sys.version_info > (3, 0)):
-  data = pickle.load(open("yf_data.dat", "rb"), encoding='latin1')
+  data = pickle.load(open("./numerical_test/yf_data.dat", "rb"), encoding='latin1')
 else:
-  data = pickle.load(open("yf_data.dat", "r") )
+  data = pickle.load(open("./numerical_test/yf_data.dat", "r") )
 X_train = data['X_train']
 X_train_features = data['X_train_features']
 Y_marginals = data['Y_marginals']

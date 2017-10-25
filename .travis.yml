@@ -30,6 +30,7 @@ script:
   # simulate cases with continous 0 gradients
   - python numerical_test/Simulate_Extreme_Cases_Zero_Epoch.py
   # memory based checkpointing test (default)
+  - unzip numerical_test/yf_data.dat.zip -d ./numerical_test/
   - python numerical_test/test-ckpt-memory.py --nhidden=50 --debug  --use_cuda --use_lstm
   # disk based checkpointing (default)
   - python numerical_test/test-ckpt-disk.py --nhidden=50 --debug  --use_cuda --use_lstm
