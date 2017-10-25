@@ -1,1 +1,21 @@
-language: python
+sudo: false  # to use container-based infra, see: http://docs.travis-ci.com/user/migrating-from-legacy/
+
+language:
+  - python
+python:
+  - "2.7"
+
+# Install package
+before_install:
+  - sudo apt-get update
+  - wget https://repo.continuum.io/archive/Anaconda2-5.0.0.1-Linux-x86_64.sh -O anaconda2.sh
+  - bash anaconda2.sh -b -p $HOME/anaconda2
+  - export PATH="$HOME/anaconda2/bin:$PATH"
+  - conda install pytorch torchvision cuda80 -c soumith
+  
+# Run tests
+- python numerical_test/Simulate_Extreme_Cases_Jump.py
+- python numerical_test/Simulate_Extreme_Cases_Zero_Epoch.py
+- bash numerical_test/run.sh
+  
+  
