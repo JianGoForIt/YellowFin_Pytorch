@@ -66,8 +66,8 @@ for t in range(4000):
         min_loss_so_far=loss.data[0]
         
     #
-    if loss.data[0]>5*min_loss_so_far:
-        # JIAN: THIS IS THE CHECK FOR BOUNCING BACK
+    if loss.data[0]>5*min_loss_so_far or loss.data[0] != loss.data[0]:
+        # THIS IS THE CHECK FOR BOUNCING BACK and nan loss
         # We might want to throw an exception here (if that's how TravisCI works)
         raise Exception("loss dramatically bounces back after gradient spike")
         
@@ -89,12 +89,11 @@ for t in range(4000):
         param.grad = target_norm * param.grad / grad_norm
     #print 'After', torch_list_grad_norm(optimizer._optimizer.param_groups[0]['params'])
     
-    # JIAN: ADD CHECKS FOR NANS HERE
-    # JIAN: ADD CHECKS FOR DR>=1
-    # JIAN: ADD CHECKS FOR CUBIC SOLVER
 ####### END MONITORING
     
     # Calling the step function on an Optimizer makes an update to its parameters
     optimizer.step()
+    # JIAN: ADD CHECKS FOR DR>=1
+    # JIAN: ADD CHECKS FOR CUBIC SOLVER
 
 
