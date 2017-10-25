@@ -25,6 +25,12 @@ before_install:
   - conda install --yes pytorch torchvision cuda80 -c soumith
 
 script:
+  # simulate cases with gradient spike
   - python numerical_test/Simulate_Extreme_Cases_Jump.py
+  # simulate cases with continous 0 gradients
   - python numerical_test/Simulate_Extreme_Cases_Zero_Epoch.py
-  - bash numerical_test/run_ckpt_test.sh
+  # memory based checkpointing test (default)
+  - python numerical_test/test-ckpt-memory.py --nhidden=50 --debug  --use_cuda --use_lstm
+  # disk based checkpointing (default)
+  - python numerical_test/test-ckpt-disk.py --nhidden=50 --debug  --use_cuda --use_lstm
+

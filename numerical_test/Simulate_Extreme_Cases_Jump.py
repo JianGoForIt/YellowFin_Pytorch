@@ -29,7 +29,7 @@ import numpy as np
 # In[5]:
 
 
-sys.path.append("../tuner_utils")
+sys.path.append("./tuner_utils")
 from yellowfin import YFOptimizer
 
 
