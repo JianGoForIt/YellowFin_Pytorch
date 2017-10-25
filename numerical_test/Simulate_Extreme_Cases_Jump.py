@@ -1,52 +1,10 @@
 
 # coding: utf-8
-
-# In[1]:
-
-
 import torch
-
-
-# In[2]:
-
-
 import sys
-
-
-# In[3]:
-
-
 import numpy as np
-
-
-# In[4]:
-
-
-# %load_ext autoreload
-# %autoreload 2
-
-
-# In[5]:
-
-
 sys.path.append("./tuner_utils")
 from yellowfin import YFOptimizer
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[6]:
-
 
 # Code in file nn/two_layer_net_optim.py
 import torch
@@ -63,28 +21,12 @@ torch.manual_seed(1)
 x = Variable(torch.randn(N, D_in))
 y = Variable(torch.randn(N, D_out), requires_grad=False)
 
-
-# In[ ]:
-
-
-
-
-
-# ### YF
-
-# In[7]:
-
-
 def torch_list_grad_norm(param_list):
     squared_sum = Variable(torch.zeros(1))
     for param in param_list:
         squared_sum += param.grad.norm()**2
     return squared_sum.sqrt()
         
-
-
-# In[8]:
-
 
 # Use the nn package to define our model and loss function.
 model = torch.nn.Sequential(
@@ -127,10 +69,10 @@ for t in range(4000):
     if loss.data[0]>5*min_loss_so_far:
         # JIAN: THIS IS THE CHECK FOR BOUNCING BACK
         # We might want to throw an exception here (if that's how TravisCI works)
-        print "*********"
+        raise Exception("loss dramatically bounces back after gradient spike")
         
     if t<10 or t>3500:
-        print(t, loss.data[0])
+        print("loss at step ", t, loss.data[0])
 
         # Extreme gradient values in here
         if t % 2 == 0:
@@ -154,36 +96,5 @@ for t in range(4000):
     
     # Calling the step function on an Optimizer makes an update to its parameters
     optimizer.step()
-
-    
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
-
-
-
-# In[ ]:
-
-
 
 

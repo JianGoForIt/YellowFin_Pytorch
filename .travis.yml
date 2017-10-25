@@ -23,6 +23,7 @@ before_install:
   - export PATH=~/miniconda/bin:$PATH
   - conda update --yes conda
   - conda install --yes pytorch torchvision cuda80 -c soumith
+  - conda install --yes -c anaconda pandas
 
 script:
   # simulate cases with gradient spike
