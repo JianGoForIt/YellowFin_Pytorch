@@ -338,17 +338,6 @@ for epoch in range(start_epoch, start_epoch+200):
       lr_grad_norm_clamp_act_list,\
       fast_view_act_list)
 
-    # if epoch % 10 == 0 or epoch == 5:
-    #     plot_func(log_dir=args.logdir, iter_id=epoch, loss_list=loss_list,
-    #       local_curv_list=local_curv_list, max_curv_list=max_curv_list,
-    #       min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list,
-    #       lr_list=lr_list, lr_t_list=lr_t_list, dr_list=dr_list,
-    #       mu_list=mu_list, mu_t_list=mu_t_list,
-    #       grad_avg_norm_list=[],
-    #       dist_list=dist_list, grad_var_list=grad_var_list,
-    #       move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
-    #       fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list)
-
 
     train_loss_list = loss_list
     test_acc = test(epoch)

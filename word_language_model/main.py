@@ -349,26 +349,10 @@ try:
         #    lr_list.append(optimizer._lr)
         
 
-        if args.opt_method=='YF' and (epoch % 5 == 0 or epoch == 5):
-            plot_func(log_dir=args.logdir, iter_id=epoch, loss_list=loss_list,
-                local_curv_list=local_curv_list, max_curv_list=max_curv_list,
-                min_curv_list=min_curv_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list,
-                lr_list=lr_list, lr_t_list=lr_t_list, dr_list=dr_list,
-                mu_list=mu_list, mu_t_list=mu_t_list,
-                grad_avg_norm_list=[],
-                dist_list=dist_list, grad_var_list=grad_var_list,
-                move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
-                fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list)
-
-
         with open(args.logdir+"/loss.txt", "wb") as f:
             np.savetxt(f, np.array(train_loss_list) )
         with open(args.logdir+"/val_loss.txt", "wb") as f:
             np.savetxt(f, np.array(val_loss_list) )
-        with open(args.logdir+"/lr.txt", "wb") as f:
-            np.savetxt(f, np.array(lr_list) )
-        with open(args.logdir+"/mu.txt", "wb") as f:
-            np.savetxt(f, np.array(mu_list) )
 
 
 except KeyboardInterrupt:
