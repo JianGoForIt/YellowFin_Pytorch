@@ -57,7 +57,7 @@ parser.add_argument('--lr_thresh', type=float, default=1.0)
 args = parser.parse_args()
 
 if not os.path.isdir(args.logdir):
-    os.mkdir(args.logdir)
+    os.makedirs(args.logdir)
 logging.basicConfig(filename=args.logdir + "/num.log", level=logging.DEBUG)
 
 # Set the random seed manually for reproducibility.
