@@ -9,7 +9,7 @@ import os
 #import cPickle as pickle
 import pickle
 import numpy as np
-from nn1_decouple_feat_cmp_norm_oct_1 import *
+from nn1 import *
 
 import argparse
 parser = argparse.ArgumentParser(description='PyTorch test with the model from Sen')

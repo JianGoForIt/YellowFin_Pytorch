@@ -48,7 +48,7 @@ if args.debug:
 import sys
 sys.path.append("./tuner_utils")
 from yellowfin import YFOptimizer
-from debug_plot import plot_func
+# from debug_plot import plot_func
 
 
 os.environ['CUDA_VISIBLE_DEVICES']="0"
