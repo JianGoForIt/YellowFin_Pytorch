@@ -1,4 +1,4 @@
-# YellowFin
+# YellowFin [![Build Status](https://travis-ci.org/JianGoForIt/YellowFin_Pytorch.svg?branch=nan_investigation_lr_grad_clamp)](https://travis-ci.org/JianGoForIt/YellowFin_Pytorch)
 
 YellowFin is an auto-tuning optimizer based on momentum SGD **which requires no manual specification of learning rate and momentum**. It measures the objective landscape on-the-fly and tunes momentum as well as learning rate using local quadratic approximation.
 
