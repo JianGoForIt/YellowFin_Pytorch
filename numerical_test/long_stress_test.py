@@ -64,8 +64,10 @@ num_classes = 1
 
 
 # In[4]:
-
-data = pickle.load(open("yf_data.dat", "rb"))
+if (sys.version_info > (3, 0)):
+  data = pickle.load(open("./yf_data.dat", "rb"), encoding='latin1')
+else:
+  data = pickle.load(open("./yf_data.dat", "r") )
 X_train = data['X_train']
 X_train_features = data['X_train_features']
 Y_marginals = data['Y_marginals']
