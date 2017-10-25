@@ -3,6 +3,8 @@ import numpy as np
 import torch
 import copy
 import logging
+import os
+import pickle as cp
 
 # eps for numerical stability
 eps = 1e-6
@@ -11,7 +13,8 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.0001, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=True, h_min_log_smooth=True, 
-    checkpoint_interval=500, verbose=True, stat_protect_fac=100.0):
+    checkpoint_interval=1000, verbose=False, stat_protect_fac=100.0, catastrophic_move_thresh=100.0,
+    use_disk_checkpoint=False, checkpoint_dir='./YF_workspace'):
     '''
     clip thresh is the threshold value on ||lr * gradient||
     delta_mu can be place holder/variable/python scalar. They are used for additional
@@ -84,7 +87,17 @@ class YFOptimizer(object):
     self._exploding_grad_clip_thresh=1e3
     self._exploding_grad_clip_target_value = 1e3
     self._stat_protect_fac = stat_protect_fac
+    self._catastrophic_move_thresh = catastrophic_move_thresh
     self._exploding_grad_detected = False
+
+    # workspace creation
+    self._use_disk_checkpoint = use_disk_checkpoint
+    self._checkpoint_dir = checkpoint_dir
+    if use_disk_checkpoint:
+      if not os.path.exists(self._checkpoint_dir):
+        os.makedirs(self._checkpoint_dir)
+      self._checkpoint_file = "checkpoint_pid_" + str(os.getpid())
+
 
   def state_dict(self):
     # for checkpoint saving
@@ -128,7 +141,30 @@ class YFOptimizer(object):
     param_id = 0
     for group in self._optimizer.param_groups:
       for p in group["params"]:
-        p.data = state_dict["model_state_list"][param_id]
+        p.data.copy_(state_dict["model_state_list"][param_id] )
+        param_id += 1
+    self._global_state = state_dict['global_state']
+    self._lr_factor = state_dict['lr_factor']
+    self._iter = state_dict['iter']
+    self._lr = state_dict['lr']
+    self._mu = state_dict['mu']
+    self._clip_thresh = state_dict['clip_thresh']
+    self._beta = state_dict['beta']
+    self._curv_win_width = state_dict['curv_win_width']
+    self._zero_debias = state_dict['zero_debias']
+    self._h_min = state_dict["h_min"]
+    self._h_max = state_dict["h_max"]
+    return
+
+  def load_state_dict_perturb(self, state_dict):
+    # for checkpoint saving
+    self._optimizer.load_state_dict(state_dict['sgd_state_dict'])
+    # for recover model internally if any numerical issue happens
+    param_id = 0
+    for group in self._optimizer.param_groups:
+      for p in group["params"]:
+        p.data.copy_(state_dict["model_state_list"][param_id] )
+        p.data += 1e-8
         param_id += 1
     self._global_state = state_dict['global_state']
     self._lr_factor = state_dict['lr_factor']
@@ -347,7 +383,6 @@ class YFOptimizer(object):
 
     if self._iter >= 1:
       self._exploding_grad_clip_thresh = self._h_max
-      #self._exploding_grad_clip_target_value = np.sqrt(np.sqrt(self._h_max) * np.sqrt(self._h_min) )         
       self._exploding_grad_clip_target_value = np.sqrt(self._h_max)    
       if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
@@ -444,6 +479,12 @@ class YFOptimizer(object):
       #group['momentum'] = max(self._mu, self._mu_t)
       if self._force_non_inc_step == False:
         group['lr'] = self._lr_t * self._lr_factor
+        # a loose clamping to prevent catastrophically large move. If the move
+        # is too large, we set lr to 0 and only use the momentum to move
+        if group['lr'] * self._global_state['grad_norm_squared'] >= self._catastrophic_move_thresh:
+          group['lr'] = 0.0
+          if self._verbose:
+            logging.warning("Omit catastropic move!")
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
@@ -492,9 +533,14 @@ class YFOptimizer(object):
       self.update_hyper_param()
 
       # periodically save model and states
-      if self._iter % self._checkpoint_interval == 1:
-        self._state_checkpoint = copy.deepcopy(self.state_dict() )
-
+      if self._iter % self._checkpoint_interval == 0:
+        if self._use_disk_checkpoint and os.path.exists(self._checkpoint_dir):
+          checkpoint_path = self._checkpoint_dir + "/" + self._checkpoint_file
+          with open(checkpoint_path, "wb") as f:
+            cp.dump(self.state_dict(), f, protocol=2)
+        else:
+          self._state_checkpoint = copy.deepcopy(self.state_dict() )
+      
       # protection from exploding gradient
       if self._exploding_grad_detected and self._verbose:
         logging.warning("exploding gradient detected: grad norm detection thresh %f , grad norm %f, grad norm after clip%f", 
@@ -502,9 +548,9 @@ class YFOptimizer(object):
           np.sqrt(self._global_state['grad_norm_squared'] ), 
           self._exploding_grad_clip_target_value)
       if self._exploding_grad_detected:
-        print("exploding gradient detected: grad norm detection thresh ", np.sqrt(self._exploding_grad_clip_thresh), 
-          "grad norm", np.sqrt(self._global_state['grad_norm_squared'] ), 
-          "grad norm after clip", self._exploding_grad_clip_target_value)
+        # print("exploding gradient detected: grad norm detection thresh ", np.sqrt(self._exploding_grad_clip_thresh), 
+        #   "grad norm", np.sqrt(self._global_state['grad_norm_squared'] ), 
+        #   "grad norm after clip ", self._exploding_grad_clip_target_value)
         torch.nn.utils.clip_grad_norm(self._var_list, self._exploding_grad_clip_target_value + eps)
 
       self._optimizer.step()
@@ -512,8 +558,13 @@ class YFOptimizer(object):
       self._iter += 1
     except:
       # load the last checkpoint
-      logging.warning("Numerical issue triggered restore with backup. Resumed from last checkpoint.")
-      self.load_state_dict(self._state_checkpoint)
+      logging.warning("Numerical issue triggered restore with backup. Resuming from last checkpoint.")
+      if self._use_disk_checkpoint and os.path.exists(self._checkpoint_dir):
+        checkpoint_path = self._checkpoint_dir + "/" + self._checkpoint_file
+        with open(checkpoint_path, "rb") as f:
+          self.load_state_dict_perturb(cp.load(f))
+      else:
+        self.load_state_dict_perturb(copy.deepcopy(self._state_checkpoint) )
 
     return 
 

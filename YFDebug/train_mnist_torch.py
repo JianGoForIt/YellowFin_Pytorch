@@ -216,11 +216,12 @@ for epoch in range(num_epochs):
         opt.step()
 
         # For plotting
-        unclip_g_norm_list.append(opt._unclip_grad_norm)
+        #unclip_g_norm_list.append(opt._unclip_grad_norm)
 
         t += time.time()
-
+	
         loss_list.append(loss.data[0]) 
+        
         local_curv_list.append(opt._global_state['grad_norm_squared'] )
         max_curv_list.append(opt._h_max)
         min_curv_list.append(opt._h_min)

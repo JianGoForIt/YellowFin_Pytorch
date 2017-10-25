@@ -8,7 +8,7 @@
 import os
 import cPickle as pickle
 import numpy as np
-from nn1_decouple_feat_cmp_norm_oct_1 import *
+from nn1_stress_test import *
 
 import argparse
 parser = argparse.ArgumentParser(description='PyTorch test with the model from Sen')
@@ -45,7 +45,7 @@ if not os.path.exists(args.log_dir):
 print("debug mode", args.debug)
 if args.debug:
     import logging
-    logging.basicConfig(filename=args.log_dir + "/num.log",level=logging.DEBUG)
+    # logging.basicConfig(filename=args.log_dir + "/num.log",level=logging.DEBUG)
 
 # In[2]:
 
@@ -139,19 +139,12 @@ sigmoid = nn.Sigmoid()
 learning_rate = 0.0001
 print("lr thresh", args.lr_thresh)
 optimizer = YFOptimizer(mix_softmax.parameters(), beta=0.999, lr=learning_rate, mu=0.0, zero_debias=False, clip_thresh=None, 
-                        auto_clip_fac=None, curv_win_width=20, force_non_inc_step=False)
+                        auto_clip_fac=None, curv_win_width=20, force_non_inc_step=False, use_disk_checkpoint=True)
 
 # word_optmizer = YFOptimizer(word_attn.parameters(), lr=learning_rate, mu=0.0, auto_clip_fac=2.0)
 # mix_optimizer = YFOptimizer(mix_softmax.parameters(), lr=learning_rate, mu=0.0, auto_clip_fac=2.0)
 
 criterion = nn.MultiLabelSoftMarginLoss(size_average=True)
-
-
-# In[11]:
-#if use_cuda:
-#    word_attn.cuda()
-#    mix_softmax.cuda()
-
 
 # In[12]:
 
@@ -236,7 +229,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
             #  fast_view_act_list.append(4.0/( (math.sqrt(optimizer._global_state["grad_norm_squared"] ) + math.sqrt(optimizer._h_min) )**2 + 1e-6))
             #  lr_grad_norm_clamp_act_list.append(optimizer._lr_grad_norm_thresh / (math.sqrt(optimizer._global_state["grad_norm_squared"] ) + 1e-6) )
 
-            loss, grad_norm_250 = train_data(tokens, features, labels, word_attn_model, sent_attn_model, optimizer, loss_criterion, cuda=use_cuda, lstm=args.use_lstm)
+            loss, grad_norm_250 = train_data(i, tokens, features, labels, word_attn_model, sent_attn_model, optimizer, loss_criterion, cuda=use_cuda, lstm=args.use_lstm)
             loss_s, gn_s = loss, grad_norm_250
     #             print loss
             #acc = test_accuracy_mini_batch(tokens, features, labels, word_attn_model, sent_attn_model)
@@ -312,28 +305,28 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
             loss_epoch = []
             accuracy_epoch = []
             
-            with open(log_dir + "/grad_norm_list_250.txt", "w") as f:
-                np.savetxt(f, grad_norm_list_250)
-            with open(log_dir + "/grad_norm_list_50.txt", "w") as f:
-                np.savetxt(f, grad_norm_list_50)
-            with open(log_dir + "/grad_norm_list_10.txt", "w") as f:
-                np.savetxt(f, grad_norm_list_10)
-            with open(log_dir + "/grad_norm_avg.txt", "w") as f:
-                np.savetxt(f, grad_norm_avg_list)
-            with open(log_dir + "/grad_avg_norm.txt", "w") as f:
-                np.savetxt(f, grad_avg_norm_list)
+            # with open(log_dir + "/grad_norm_list_250.txt", "w") as f:
+            #     np.savetxt(f, grad_norm_list_250)
+            # with open(log_dir + "/grad_norm_list_50.txt", "w") as f:
+            #     np.savetxt(f, grad_norm_list_50)
+            # with open(log_dir + "/grad_norm_list_10.txt", "w") as f:
+            #     np.savetxt(f, grad_norm_list_10)
+            # with open(log_dir + "/grad_norm_avg.txt", "w") as f:
+            #     np.savetxt(f, grad_norm_avg_list)
+            # with open(log_dir + "/grad_avg_norm.txt", "w") as f:
+            #     np.savetxt(f, grad_avg_norm_list)
                 
-            with open(log_dir + "/mu_t_list.txt", "w") as f:
-                np.savetxt(f, mu_t_list)
+            # with open(log_dir + "/mu_t_list.txt", "w") as f:
+            #     np.savetxt(f, mu_t_list)
                 
-            with open(log_dir + "/lr_t_list.txt", "w") as f:
-                np.savetxt(f, lr_t_list) 
+            # with open(log_dir + "/lr_t_list.txt", "w") as f:
+            #     np.savetxt(f, lr_t_list) 
               
-            with open(log_dir + "/mu_list.txt", "w") as f:
-                np.savetxt(f, mu_list) 
+            # with open(log_dir + "/mu_list.txt", "w") as f:
+            #     np.savetxt(f, mu_list) 
 
-            with open(log_dir + "/lr_list.txt", "w") as f:
-                np.savetxt(f, lr_list)
+            # with open(log_dir + "/lr_list.txt", "w") as f:
+            #     np.savetxt(f, lr_list)
             
         # DEBUG
         loss_list.append(loss)
@@ -379,17 +372,17 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
 #             with open("h_val.txt", "w") as f:
 #                 np.savetxt(f, h_list)
         
-        if (i % print_figure_every == 0 and i != 0) or (i == 50 or i == 1000):
-            plot_func(log_dir=log_dir, iter_id=i, loss_list=loss_list, 
-                 local_curv_list=h_list, max_curv_list=h_max_list, 
-                 min_curv_list=h_min_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
-                 lr_list=lr_list, lr_t_list=lr_t_list, dr_list=dr_list, 
-                 mu_list=mu_list, mu_t_list=mu_t_list,
-                 grad_avg_norm_list=grad_avg_norm_list,
-                 dist_list=dist_list, grad_var_list=grad_var_list, 
-                 move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
-                 fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list)
-            print "figure plotted"
+        # if (i % print_figure_every == 0 and i != 0) or (i == 50 or i == 1000):
+        #     plot_func(log_dir=log_dir, iter_id=i, loss_list=loss_list, 
+        #          local_curv_list=h_list, max_curv_list=h_max_list, 
+        #          min_curv_list=h_min_list, lr_g_norm_list=lr_g_norm_list, lr_g_norm_squared_list=lr_g_norm_squared_list, 
+        #          lr_list=lr_list, lr_t_list=lr_t_list, dr_list=dr_list, 
+        #          mu_list=mu_list, mu_t_list=mu_t_list,
+        #          grad_avg_norm_list=grad_avg_norm_list,
+        #          dist_list=dist_list, grad_var_list=grad_var_list, 
+        #          move_lr_g_norm_list=move_lr_g_norm_list, move_lr_g_norm_squared_list=move_lr_g_norm_squared_list,
+        #          fast_view_act_list=fast_view_act_list, lr_grad_norm_clamp_act_list=lr_grad_norm_clamp_act_list)
+        #     print "figure plotted"
         # END of DEBUG
         
 #     torch.save(word_attn_model, log_dir + "/word_attn.model")
@@ -406,7 +399,7 @@ log_dir = args.log_dir
 if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
 loss_full = train_early_stopping(batch_size, X_train, X_train_features, Y_marginals, X_test, X_test_feature, word_attn, mix_softmax, optimizer, 
-                                criterion, 150000, 1000, 1000)
+                                criterion, 100, 1000, 1000)
 
 
 # ##### 
