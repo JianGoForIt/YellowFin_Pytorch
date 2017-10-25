@@ -65,12 +65,12 @@ For more experiments, please refer to our [YellowFin Tensorflow Repo](https://gi
 
 * **Non-increasing move**: In some rare cases, we have observe increasing value of lr * || grad ||, i.e. the move, may result in unstableness. We implemented an engineering trick to enforce non-increasing value of lr * || grad ||. The default setting turns the feature off, you can turn it on with ```force_non_inc_step_after_iter=the starting iter you want to enforce the non-increasing value ``` **if it is really necessary**. We recommend ```force_non_inc_step_after_iter``` to be at least a few hundreds because some models may need to gradually raise the magnitude of gradient in the beginning (e.g. a model, not properly initialized, may have near zero-gradient and need iterations to get reasonable gradient level).
 
-## Additional experiments to test the repo
-We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L91) and [Tied LSTM on PTB](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/word_language_model/main.py#L191) to test the PyTorch implementation here. For more on experimental results, please refer to our [paper](https://arxiv.org/abs/1706.03471).
+<!--## Additional experiments to test the repo
+We use the [ResNext on CIFAR10](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L91) and [Tied LSTM on PTB](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/word_language_model/main.py#L191) to test the PyTorch implementation here. For more on experimental results, please refer to our [paper](https://arxiv.org/abs/1706.03471).-->
 
-![ResNext](plots/resnext_test_acc.png)
+<!--![ResNext](plots/resnext_test_acc.png)-->
 
-![Tied LSTM](plots/tied_ptb_test_perp.png)
+<!--![Tied LSTM](plots/tied_ptb_test_perp.png)-->
 
 ## Citation
 If you use YellowFin in your paper, please cite the paper:
