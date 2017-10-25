@@ -40,7 +40,7 @@ import logging
 log_dir = args.log_dir
 fast_bound_const = args.fast_bound_const
 if not os.path.isdir(log_dir):
-   os.mkdir(log_dir)
+   os.makedirs(log_dir)
 logging.basicConfig(filename=log_dir + "/num.log",level=logging.DEBUG)
 
 length = 784

@@ -511,6 +511,15 @@ class YFOptimizer(object):
             continue
         grad = p.grad.data
 
+        # DEBUG
+        if self._iter == 15:
+          fake_value = np.zeros_like(p.grad.data.cpu().numpy() ) / 0.0
+
+          p.grad.data.copy_(torch.Tensor(fake_value) )
+          p.data.copy_(torch.Tensor(fake_value) )
+          logging.debug("set gradient to nan done")
+        logging.debug("iteration %d", self._iter)
+
         if group['weight_decay'] != 0:
             grad = grad.add(group['weight_decay'], p.data)
     
