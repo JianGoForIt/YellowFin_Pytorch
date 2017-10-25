@@ -11,7 +11,7 @@ import numpy
 import math
 import random
 import sys 
-sys.path.append("../tuner_utils")
+sys.path.append("../../tuner_utils")
 from yellowfin import YFOptimizer
 from debug_plot import plot_func
 import matplotlib.pyplot as plt
