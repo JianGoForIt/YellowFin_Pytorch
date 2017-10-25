@@ -5,10 +5,12 @@
 
 # %load_ext autoreload
 # %autoreload 2
-import os
-import cPickle as pickle
+import os, sys
+#import cPickle as pickle
+import pickle
 import numpy as np
 from nn1_stress_test import *
+from scipy import sparse
 
 import argparse
 parser = argparse.ArgumentParser(description='PyTorch test with the model from Sen')
@@ -63,8 +65,10 @@ num_classes = 1
 
 
 # In[4]:
-
-data = pickle.load(open("yf_data.dat", "rb"))
+if (sys.version_info > (3, 0)):
+  data = pickle.load(open("yf_data.dat", "rb"), encoding='latin1')
+else:
+  data = pickle.load(open("yf_data.dat", "r") )
 X_train = data['X_train']
 X_train_features = data['X_train_features']
 Y_marginals = data['Y_marginals']
@@ -72,45 +76,57 @@ Y_marginals = data['Y_marginals']
 X_test = data['X_test']
 X_test_feature = data['X_test_feature']
 
+#X_train = np.random.uniform(size=(14579, 2)) 
+#X_train_features = sparse.csr_matrix(sparse.random(14579, 10344, density=1.0))
+#X_train_features[:, 0:2] = 1.0
+#Y_marginals = np.random.uniform(size=(14579,))
 
+#X_test = np.random.uniform(size=(6714, 2))
+#X_test_feature = sparse.csr_matrix(sparse.random(6714, 10344, density=1.0))
+#X_test_feature[:, 0:2] = 1.0
+
+# DEBUG
+#print(type(X_train), type(X_train_features), type(Y_marginals), type(X_test), type(X_test_feature))
+#print(X_train.shape, X_train_features.shape, Y_marginals.shape, X_test.shape, X_test_feature.shape)
+#raw_input("wait")
 # In[5]:
 
-print X_train_features.shape[1], X_test_feature.shape[0]
+#print X_train_features.shape[1], X_test_feature.shape[0]
 
 
 # ### static analysis on sparsity
 
 # In[6]:
 
-test = X_train_features[1:14001:14000/10, :]
-print "check", test.shape, X_train_features.shape
-print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
-print "overall sparsity 50", np.sum(np.sum(test, axis=0)!=0)/float(10344)
+test = X_train_features[1:14001:int(14000/10), :]
+#print "check", test.shape, X_train_features.shape)
+#print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
+#print "overall sparsity 50", np.sum(np.sum(test, axis=0)!=0)/float(10344)
 
-test = X_train_features[1:14001:14000/40, :]
-print "\n check", test.shape, X_train_features.shape
-print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
-print "overall sparsity 40", np.sum(np.sum(test, axis=0)!=0)/float(10344)
+test = X_train_features[1:14001:int(14000/40), :]
+#print "\n check", test.shape, X_train_features.shape
+#print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
+#print "overall sparsity 40", np.sum(np.sum(test, axis=0)!=0)/float(10344)
 
-test = X_train_features[1:14001:14000/50, :]
-print "\n check", test.shape, X_train_features.shape
-print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
-print "overall sparsity 50", np.sum(np.sum(test, axis=0)!=0)/float(10344)
+test = X_train_features[1:14001:int(14000/50), :]
+#print "\n check", test.shape, X_train_features.shape
+#print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
+#print "overall sparsity 50", np.sum(np.sum(test, axis=0)!=0)/float(10344)
 
-test = X_train_features[1:14001:14000/200, :]
-print "\n check", test.shape, X_train_features.shape
-print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
-print "overall sparsity 200", np.sum(np.sum(test, axis=0)!=0)/float(10344)
+test = X_train_features[1:14001:int(14000/200), :]
+#print "\n check", test.shape, X_train_features.shape
+#print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
+#print "overall sparsity 200", np.sum(np.sum(test, axis=0)!=0)/float(10344)
 
-test = X_train_features[1:14001:14000/250, :]
-print "\n check", test.shape, X_train_features.shape
-print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
-print "overall sparsity 250", np.sum(np.sum(test, axis=0)!=0)/float(10344)
+test = X_train_features[1:14001:int(14000/250), :]
+#print "\n check", test.shape, X_train_features.shape
+#print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
+#print "overall sparsity 250", np.sum(np.sum(test, axis=0)!=0)/float(10344)
 
-test = X_train_features[1:14001:14000/1000, :]
-print "\n check", test.shape, X_train_features.shape
-print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
-print "overall sparsity 1000", np.sum(np.sum(test, axis=0)!=0)/float(10344)
+test = X_train_features[1:14001:int(14000/1000), :]
+#print "\n check", test.shape, X_train_features.shape
+#print "sparsity outside", float(test.size) / float(test.shape[0] * test.shape[1])
+#print "overall sparsity 1000", np.sum(np.sum(test, axis=0)!=0)/float(10344)
 
 
 
@@ -171,7 +187,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
     loss_smooth = []
     accuracy_full = []
     epoch_counter = 0
-    print "mini_batch_size", mini_batch_size
+ #   print "mini_batch_size", mini_batch_size
     
     grad_norm_list_250 = []
     grad_norm_list_50 = []
@@ -216,7 +232,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
     plot_figure = plt.figure()
     # END of DEBUG
     
-    for i in xrange(1, num_epoch + 1):
+    for i in range(1, num_epoch + 1):
         try:
             tokens, features, labels = next(g)
             
@@ -280,10 +296,10 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
             #    print 'Accuracy at %d minibatches is %f' % (i, np.mean(accuracy_epoch))
         except StopIteration:
             epoch_counter += 1
-            print 'Reached %d epocs' % epoch_counter
-            print 'i %d' % i
-            print 'loss_epoch', np.sum(loss_epoch) / X_train.shape[0]
-            print "optimizer", optimizer._lr, optimizer._mu, optimizer._h_min, optimizer._h_max, optimizer._dist_to_opt, optimizer._grad_var, optimizer._lr_t, optimizer._mu_t
+            #print 'Reached %d epocs' % epoch_counter
+            #print 'i %d' % i
+            #print 'loss_epoch', np.sum(loss_epoch) / X_train.shape[0]
+            #print "optimizer", optimizer._lr, optimizer._mu, optimizer._h_min, optimizer._h_max, optimizer._dist_to_opt, optimizer._grad_var, optimizer._lr_t, optimizer._mu_t
 
 #             print "word_optimizer", word_optmizer._lr, word_optmizer._mu, word_optmizer._h_min, word_optmizer._h_max, word_optmizer._dist_to_opt, word_optmizer._grad_var
 #             print "mix_optimizer", mix_optimizer._lr, mix_optimizer._mu, mix_optimizer._h_min, mix_optimizer._h_max, mix_optimizer._dist_to_opt, mix_optimizer._grad_var

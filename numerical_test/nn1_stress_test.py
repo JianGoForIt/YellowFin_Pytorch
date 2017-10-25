@@ -196,7 +196,7 @@ def train_data(iter_id, mini_batch, feature_batch, targets, word_attn_model, mix
                 else:
                   fake_value = np.zeros_like(p.grad.data.numpy() ) / 0.0
                 p.grad.data.copy_(torch.Tensor(fake_value) )
-        print "grad set to nan"
+        print("grad set to nan")
     if iter_id % 10 != 5 and iter_id % 10 == 7:
         for group_id, group in enumerate(optimizer._optimizer.param_groups):
             for p_id, p in enumerate(group['params'] ):
@@ -207,7 +207,19 @@ def train_data(iter_id, mini_batch, feature_batch, targets, word_attn_model, mix
                 else:
                   fake_value = np.ones_like(p.grad.data.numpy() ) / 0.0
                 p.grad.data.copy_(torch.Tensor(fake_value) )
-        print "grad set to inf"
+        print("grad set to inf")
+
+    if iter_id % 10 != 5 and iter_id % 10 != 7 and iter_id % 10 == 9:
+        for group_id, group in enumerate(optimizer._optimizer.param_groups):
+            for p_id, p in enumerate(group['params'] ):
+                if p.grad is None:
+                    continue
+                if cuda:
+                  fake_value = -np.ones_like(p.grad.data.cpu().numpy() ) / 0.0
+                else:
+                  fake_value = -np.ones_like(p.grad.data.numpy() ) / 0.0
+                p.grad.data.copy_(torch.Tensor(fake_value) )
+        print("grad set to -inf")
 
     if do_step:
         optimizer.step()
@@ -281,7 +293,7 @@ def test_accuracy_full_batch(tokens, features, mini_batch_size, word_attn, sent_
     g = gen_minibatch1(tokens, features, mini_batch_size, False)
     for token, feature in g:
         if cnt % 100 == 0:
-            print cnt
+            print(cnt)
         cnt +=1
 #         print token.size()
 #         y_pred = get_predictions(token, word_attn, sent_attn)
@@ -312,7 +324,10 @@ def iterate_minibatches(inputs, features, targets, batchsize, shuffle=False):
     
 def gen_minibatch(tokens, features, labels, mini_batch_size, shuffle= True):
     tokens = np.asarray(tokens)[np.where(labels!=0.5)[0]]
-    features = np.asarray(features.todense())[np.where(labels!=0.5)[0]]
+    if type(features) is np.ndarray:
+      features = np.asarray(features)[np.where(labels!=0.5)[0]]
+    else:
+      features = np.asarray(features.todense())[np.where(labels!=0.5)[0]]
     labels = np.asarray(labels)[np.where(labels!=0.5)[0]]
 #     print tokens.shape
 #     print tokens[0]
@@ -326,7 +341,7 @@ def gen_minibatch(tokens, features, labels, mini_batch_size, shuffle= True):
 def gen_minibatch1(tokens, features, mini_batch_size, shuffle= True):
     tokens = np.asarray(tokens)
     features = np.asarray(features.todense())
-    print tokens.shape
+    print(tokens.shape)
     for token, feature, label in iterate_minibatches(tokens, features, features, mini_batch_size, shuffle = shuffle):
 #         print token
 #         token = pad_batch(token)
