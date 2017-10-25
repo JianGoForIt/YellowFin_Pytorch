@@ -209,7 +209,7 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
     lr_grad_norm_clamp_act_list = []
     fast_view_act_list = [] 
 
-    plot_figure = plt.figure()
+    # plot_figure = plt.figure()
     # END of DEBUG
     
     for i in range(1, num_epoch + 1):
