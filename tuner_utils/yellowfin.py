@@ -484,7 +484,7 @@ class YFOptimizer(object):
         if group['lr'] * np.sqrt(self._global_state['grad_norm_squared']) >= self._catastrophic_move_thresh:
           group['lr'] = self._catastrophic_move_thresh / np.sqrt(self._global_state['grad_norm_squared'] + eps)
           if self._verbose:
-            logging.warning("Omit catastropic move!")
+            logging.warning("clip catastropic move!")
       elif self._iter > self._curv_win_width:
         # force to guarantee lr * grad_norm not increasing dramatically. 
         # Not necessary for basic use. Please refer to the comments
