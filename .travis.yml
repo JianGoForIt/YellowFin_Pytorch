@@ -22,6 +22,7 @@ before_install:
   - cd ..
   - export PATH=~/miniconda/bin:$PATH
   - conda update --yes conda
+  - conda install pytorch torchvision cuda80 -c soumith
   
 script:
   - python numerical_test/Simulate_Extreme_Cases_Jump.py
