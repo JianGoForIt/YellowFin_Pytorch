@@ -536,7 +536,7 @@ class YFOptimizer(object):
       if self._iter % self._checkpoint_interval == 0:
         if self._use_disk_checkpoint and os.path.exists(self._checkpoint_dir):
           checkpoint_path = self._checkpoint_dir + "/" + self._checkpoint_file
-          with open(checkpoint_path, "w") as f:
+          with open(checkpoint_path, "wb") as f:
             cp.dump(self.state_dict(), f, protocol=2)
         else:
           self._state_checkpoint = copy.deepcopy(self.state_dict() )
@@ -561,7 +561,7 @@ class YFOptimizer(object):
       logging.warning("Numerical issue triggered restore with backup. Resuming from last checkpoint.")
       if self._use_disk_checkpoint and os.path.exists(self._checkpoint_dir):
         checkpoint_path = self._checkpoint_dir + "/" + self._checkpoint_file
-        with open(checkpoint_path, "r") as f:
+        with open(checkpoint_path, "rb") as f:
           self.load_state_dict_perturb(cp.load(f))
       else:
         self.load_state_dict_perturb(copy.deepcopy(self._state_checkpoint) )
