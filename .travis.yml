@@ -16,8 +16,8 @@ before_install:
   #- conda install pytorch torchvision cuda80 -c soumith
   
 # Run tests
-- python numerical_test/Simulate_Extreme_Cases_Jump.py
-- python numerical_test/Simulate_Extreme_Cases_Zero_Epoch.py
+#- python numerical_test/Simulate_Extreme_Cases_Jump.py
+#- python numerical_test/Simulate_Extreme_Cases_Zero_Epoch.py
 #- bash numerical_test/run.sh
   
   
