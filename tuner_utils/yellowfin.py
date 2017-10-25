@@ -481,8 +481,8 @@ class YFOptimizer(object):
         group['lr'] = self._lr_t * self._lr_factor
         # a loose clamping to prevent catastrophically large move. If the move
         # is too large, we set lr to 0 and only use the momentum to move
-        if group['lr'] * self._global_state['grad_norm_squared'] >= self._catastrophic_move_thresh:
-          group['lr'] = 0.0
+        if group['lr'] * np.sqrt(self._global_state['grad_norm_squared']) >= self._catastrophic_move_thresh:
+          group['lr'] = self._catastrophic_move_thresh / np.sqrt(self._global_state['grad_norm_squared'])
           if self._verbose:
             logging.warning("Omit catastropic move!")
       elif self._iter > self._curv_win_width:
