@@ -10,7 +10,7 @@ import os, sys
 import pickle
 import numpy as np
 from nn1_stress_test import *
-from scipy import sparse
+# from scipy import sparse
 
 import argparse
 parser = argparse.ArgumentParser(description='PyTorch test with the model from Sen')
@@ -49,22 +49,17 @@ if args.debug:
     import logging
     # logging.basicConfig(filename=args.log_dir + "/num.log",level=logging.DEBUG)
 
-# In[2]:
-
 import sys
 sys.path.append("./tuner_utils")
 from yellowfin import YFOptimizer
 from debug_plot import plot_func
 
 
-# In[3]:
-
 os.environ['CUDA_VISIBLE_DEVICES']="0"
 batch_size = 50
 num_classes = 1
 
 
-# In[4]:
 if (sys.version_info > (3, 0)):
   data = pickle.load(open("./numerical_test/yf_data.dat", "rb"), encoding='latin1')
 else:
@@ -89,14 +84,11 @@ X_test_feature = data['X_test_feature']
 #print(type(X_train), type(X_train_features), type(Y_marginals), type(X_test), type(X_test_feature))
 #print(X_train.shape, X_train_features.shape, Y_marginals.shape, X_test.shape, X_test_feature.shape)
 #raw_input("wait")
-# In[5]:
 
 #print X_train_features.shape[1], X_test_feature.shape[0]
 
 
 # ### static analysis on sparsity
-
-# In[6]:
 
 test = X_train_features[1:14001:int(14000/10), :]
 #print "check", test.shape, X_train_features.shape)
@@ -129,8 +121,6 @@ test = X_train_features[1:14001:int(14000/1000), :]
 #print "overall sparsity 1000", np.sum(np.sum(test, axis=0)!=0)/float(10344)
 
 
-
-# In[7]:
 print("hidden dimension ", args.nhidden)
 word_attn = AttentionWordRNN(batch_size=batch_size, num_tokens=5664, embed_size=100, word_gru_hidden=args.nhidden, 
     bidirectional= True, init_range=args.init_range, use_lstm=args.use_lstm)
@@ -138,19 +128,12 @@ mix_softmax = MixtureSoftmax(batch_size=batch_size, word_gru_hidden = args.nhidd
 # mix_softmax = MixtureSoftmax(batch_size=batch_size, word_gru_hidden = 50, feature_dim = 0, n_classes=num_classes)
 
 
-# In[8]:
 if use_cuda:
     word_attn.cuda()
     mix_softmax.cuda()
 
-
-# In[9]:
-
 softmax = nn.Softmax()
 sigmoid = nn.Sigmoid()
-
-
-# In[10]:
 
 learning_rate = 0.0001
 print("lr thresh", args.lr_thresh)
@@ -162,7 +145,6 @@ optimizer = YFOptimizer(mix_softmax.parameters(), beta=0.999, lr=learning_rate, 
 
 criterion = nn.MultiLabelSoftMarginLoss(size_average=True)
 
-# In[12]:
 
 import time
 import math
@@ -174,8 +156,6 @@ def timeSince(since):
     s -= m * 60
     return '%dm %ds' % (m, s)
 
-
-# In[14]:
 
 def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_test, X_test_feature, word_attn_model, sent_attn_model, 
                          optimizer, loss_criterion, num_epoch, 
@@ -406,11 +386,6 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
             
     return loss_full
 
-
-# 
-
-# In[15]:
-
 log_dir = args.log_dir
 if not os.path.isdir(log_dir):
     os.mkdir(log_dir)
@@ -418,9 +393,6 @@ loss_full = train_early_stopping(batch_size, X_train, X_train_features, Y_margin
                                 criterion, 100, 1000, 1000)
 
 
-# ##### 
-
-# In[ ]:
 
 
 
