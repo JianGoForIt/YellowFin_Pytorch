@@ -24,7 +24,7 @@ before_install:
   - conda update --yes conda
   - conda install --yes pytorch torchvision cuda80 -c soumith
   - conda install --yes -c anaconda pandas
-  - conda install -c anaconda scipy
+  - conda install --yes -c anaconda scipy
 
 script:
   # memory based checkpointing test (default)
