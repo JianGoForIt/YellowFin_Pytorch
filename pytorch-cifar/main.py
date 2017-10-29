@@ -21,19 +21,32 @@ import numpy as np
 import sys
 sys.path.append("../tuner_utils")
 from yellowfin import YFOptimizer
-
+from debug_plot import plot_func
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR10 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
+parser.add_argument('--lr', default=0.0001, type=float, help='learning rate')
 parser.add_argument('--mu', default=0.0, type=float, help='momentum')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--logdir', type=str, default="./")
 parser.add_argument('--opt_method', type=str, default="YF")
+parser.add_argument('--lr_thresh', type=float, default=1.0)
+parser.add_argument('--seed', type=int, default=1)
 args = parser.parse_args()
+
+import logging
+if not os.path.isdir(args.logdir):
+    os.makedirs(args.logdir)
+#logging.basicConfig(filename=args.logdir + "/num.log",level=logging.DEBUG)
 
 use_cuda = torch.cuda.is_available()
 best_acc = 0  # best test accuracy
 start_epoch = 0  # start from epoch 0 or last checkpoint epoch
+
+np.random.seed(args.seed)
+torch.manual_seed(args.seed)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
 # Data
 print('==> Preparing data..')
@@ -94,15 +107,56 @@ elif args.opt_method == "YF":
 else:
     raise Exception("Optimizer not supported")
 # Training
-def train(epoch):
+def train(epoch, opt,
+    loss_list,\
+    local_curv_list,\
+    max_curv_list,\
+    min_curv_list,\
+    lr_list,\
+    lr_t_list,\
+    mu_t_list,\
+    dr_list,\
+    mu_list,\
+    dist_list,\
+    grad_var_list,\
+    lr_g_norm_list,\
+    lr_g_norm_squared_list,\
+    move_lr_g_norm_list,\
+    move_lr_g_norm_squared_list,\
+    lr_grad_norm_clamp_act_list,\
+    fast_view_act_list):
     print('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
     total = 0
-    loss_list = []
-    lr_list = []
-    mu_list = []
+    #loss_list = []
+    #lr_list = []
+    #mu_list = []
+
+   # loss_list = []
+   # local_curv_list = []
+   # max_curv_list = []
+   # min_curv_list = []
+   # lr_g_norm_list = []
+   # lr_list = []
+   # lr_t_list = []
+   # mu_t_list = []
+   # dr_list = []
+   # mu_list = []
+   # dist_list = []
+   # grad_var_list = []
+   # 
+   # lr_g_norm_list = []
+   # lr_g_norm_squared_list = []
+   # 
+   # move_lr_g_norm_list = []
+   # move_lr_g_norm_squared_list = []
+   # 
+   # lr_grad_norm_clamp_act_list = []
+   # fast_view_act_list = []
+
+
 
     if epoch == 151:
         if args.opt_method == "YF":
@@ -121,6 +175,25 @@ def train(epoch):
         loss.backward()
         optimizer.step()
 
+
+        loss_list.append(loss.data[0])
+        local_curv_list.append(opt._global_state['grad_norm_squared'] )
+        max_curv_list.append(opt._h_max)
+        min_curv_list.append(opt._h_min)
+        lr_list.append(opt._lr)
+        mu_list.append(opt._mu)
+        dr_list.append((opt._h_max + 1e-6) / (opt._h_min + 1e-6))
+        dist_list.append(opt._dist_to_opt)
+        grad_var_list.append(opt._grad_var)
+
+        lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
+        move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
+
+        lr_t_list.append(opt._lr_t)
+        mu_t_list.append(opt._mu_t)
+
         loss_list.append(loss.data[0] )
         train_loss += loss.data[0]
         _, predicted = torch.max(outputs.data, 1)
@@ -130,14 +203,32 @@ def train(epoch):
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
             % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
 
-        if args.opt_method == "YF":
-            lr_list.append(optimizer._optimizer.param_groups[0]['lr'] )
-            mu_list.append(optimizer._optimizer.param_groups[0]['momentum'] )
+        #if args.opt_method == "YF":
+        #    lr_list.append(optimizer._optimizer.param_groups[0]['lr'] )
+        #    mu_list.append(optimizer._optimizer.param_groups[0]['momentum'] )
         # else:
         #     lr_list.append(optimizer.param_groups[0]['lr'] )
         #     mu_list.append(optimizer.param_groups[0]['momentum'] )
 
-    return loss_list, lr_list, mu_list
+    return loss_list,\
+    local_curv_list,\
+    max_curv_list,\
+    min_curv_list,\
+    lr_list,\
+    lr_t_list,\
+    mu_t_list,\
+    dr_list,\
+    mu_list,\
+    dist_list,\
+    grad_var_list,\
+    lr_g_norm_list,\
+    lr_g_norm_squared_list,\
+    move_lr_g_norm_list,\
+    move_lr_g_norm_squared_list,\
+    lr_grad_norm_clamp_act_list,\
+    fast_view_act_list
+
+    #return loss_list, lr_list, mu_list
 
 def test(epoch):
     global best_acc
@@ -181,28 +272,82 @@ if not os.path.isdir(args.logdir):
     os.mkdir(args.logdir)
 train_loss_list = []
 test_acc_list = []
+#lr_list = []
+#mu_list = []
+
+
+loss_list = []
+local_curv_list = []
+max_curv_list = []
+min_curv_list = []
+lr_g_norm_list = []
 lr_list = []
+lr_t_list = []
+mu_t_list = []
+dr_list = []
 mu_list = []
+dist_list = []
+grad_var_list = []
+
+lr_g_norm_list = []
+lr_g_norm_squared_list = []
+
+move_lr_g_norm_list = []
+move_lr_g_norm_squared_list = []
+
+lr_grad_norm_clamp_act_list = []
+fast_view_act_list = []
+
+
 for epoch in range(start_epoch, start_epoch+200):
-    loss_list, lr_epoch, mu_epoch = train(epoch)
-    train_loss_list += loss_list
+#    loss_list, lr_epoch, mu_epoch = train(epoch)
+
+    loss_list, \
+    local_curv_list,\
+    max_curv_list,\
+    min_curv_list,\
+    lr_list,\
+    lr_t_list,\
+    mu_t_list,\
+    dr_list,\
+    mu_list,\
+    dist_list,\
+    grad_var_list,\
+    lr_g_norm_list,\
+    lr_g_norm_squared_list,\
+    move_lr_g_norm_list,\
+    move_lr_g_norm_squared_list,\
+    lr_grad_norm_clamp_act_list,\
+    fast_view_act_list = \
+      train(epoch, optimizer,
+      loss_list, \
+      local_curv_list,\
+      max_curv_list,\
+      min_curv_list,\
+      lr_list,\
+      lr_t_list,\
+      mu_t_list,\
+      dr_list,\
+      mu_list,\
+      dist_list,\
+      grad_var_list,\
+      lr_g_norm_list,\
+      lr_g_norm_squared_list,\
+      move_lr_g_norm_list,\
+      move_lr_g_norm_squared_list,\
+      lr_grad_norm_clamp_act_list,\
+      fast_view_act_list)
+
+
+    train_loss_list = loss_list
     test_acc = test(epoch)
     test_acc_list.append(test_acc)
 
-    lr_list += lr_epoch
-    mu_list += mu_epoch
-
-    with open(args.logdir + "/loss.txt", "wb") as f:
-        np.savetxt(f, np.array(train_loss_list) )
+    #lr_list += lr_epoch
+    #mu_list += mu_epoch
 
     with open(args.logdir + "/test_acc.txt", "wb") as f:
         np.savetxt(f, np.array(test_acc_list) )
-
-    with open(args.logdir + "/lr.txt", "wb") as f:
-        np.savetxt(f, np.array(lr_list) )
-
-    with open(args.logdir + "/mu.txt", "wb") as f:
-        np.savetxt(f, np.array(mu_list) )
 
 
 

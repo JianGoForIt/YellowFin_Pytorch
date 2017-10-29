@@ -1,0 +1,39 @@
+dist: trusty
+sudo: false  # to use container-based infra, see: http://docs.travis-ci.com/user/migrating-from-legacy/
+
+language:
+  - python
+python:
+  - "2.7"
+
+cache:
+  directories:
+    - download
+    - $HOME/.cache/pip
+    - $HOME/miniconda/envs/test      # to avoid repetitively setting up Ana/Miniconda environment
+
+before_install:
+  - deactivate  # leaving Travis' virtualenv first since otherwise Jupyter/IPython gets confused with conda inside a virtualenv (See: https://github.com/ipython/ipython/issues/8898)
+  - mkdir -p download
+  - cd download
+  - travis_retry wget -c https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh
+  - chmod +x miniconda.sh
+  - bash miniconda.sh -b -f -p ~/miniconda
+  - cd ..
+  - export PATH=~/miniconda/bin:$PATH
+  - conda update --yes conda
+  - conda install --yes pytorch torchvision cuda80 -c soumith
+  - conda install --yes -c anaconda pandas
+  - conda install --yes -c anaconda scipy
+
+script:
+  # memory based checkpointing test (default)
+  - unzip numerical_test/yf_data.dat.zip -d ./numerical_test/
+  - python numerical_test/test-ckpt-memory.py --nhidden=50 --debug  --use_cuda --use_lstm
+  # disk based checkpointing (default)
+  - python numerical_test/test-ckpt-disk.py --nhidden=50 --debug  --use_cuda --use_lstm
+  # simulate cases with gradient spike
+  - python numerical_test/Simulate_Extreme_Cases_Jump.py
+  # simulate cases with continous 0 gradients
+  - python numerical_test/Simulate_Extreme_Cases_Zero_Epoch.py
+

@@ -35,6 +35,7 @@ class RNNModel(nn.Module):
         self.rnn_type = rnn_type
         self.nhid = nhid
         self.nlayers = nlayers
+	
 
     def init_weights(self):
         initrange = 0.1
