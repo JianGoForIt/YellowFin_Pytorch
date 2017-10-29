@@ -45,9 +45,9 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
 For more experiments, please refer to our [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin).
 
 ## Detailed guidelines
-* **Basic use**: YFOptimizer(parameter_list) uses the uniform setting (i.e. without tuning) for all the PyTorch and Tensorflow experiments in our paper. 
+* **Basic use**: ```optimizer = YFOptimizer(parameter_list)``` uses the uniform setting (i.e. without tuning) for all the PyTorch and Tensorflow experiments in our paper. 
 
-* **Interface for manual finer control**: If you want to more finely control the learning rate (say using a manually set constant learning rate), or you want to use the typical lr-dropping technique after a ceritain number of epochs, please use ```set_lr_factor()``` in the YFOptimizer class. E.g. if you want to use a manually set constant learning rate, you can run ```set_lr_factor(desired_lr / self._lr)``` before ```self.step()``` at each iteration. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109). 
+* **Interface for manual finer control**: If you want to more finely control the learning rate (say using a manually set constant learning rate), or you want to use the typical lr-dropping technique after a ceritain number of epochs, please use ```set_lr_factor()``` in the YFOptimizer class. E.g. if you want to use a manually set constant learning rate, you can run ```set_lr_factor(desired_lr / self._lr)``` before ```self.step()``` at each iteration. Or e.g., if you want to always multiply a factor 2.0 to the learning rate originally tuned by YellowFin, you may use ```optimizer.set_lr_factor(2.0)``` right after ```optimizer = YFOptimizer(parameter_list)``` and before training with YellowFin. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109). 
 
 * **Gradient clipping**: The default setting will not do gradient clipping to prevent gradient explosion. There are three cases regarding gradient clipping. We recommend first turning off gradient clipping, which is the default setting, and only turning it on when necessary. 
 
