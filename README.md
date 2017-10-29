@@ -49,14 +49,12 @@ For more experiments, please refer to our [YellowFin Tensorflow Repo](https://gi
 
 * **Interface for manual finer control**: If you want to more finely control the learning rate (say using a manually set constant learning rate), or you want to use the typical lr-dropping technique after a ceritain number of epochs, please use ```set_lr_factor()``` in the YFOptimizer class. E.g. if you want to use a manually set constant learning rate, you can run ```set_lr_factor(desired_lr / self._lr)``` before ```self.step()``` at each iteration. Or e.g., if you want to always multiply a factor 2.0 to the learning rate originally tuned by YellowFin, you may use ```optimizer.set_lr_factor(2.0)``` right after ```optimizer = YFOptimizer(parameter_list)``` and before training with YellowFin. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109). 
 
-* **Gradient clipping**: The default setting will not do gradient clipping to prevent gradient explosion. There are three cases regarding gradient clipping. We recommend first turning off gradient clipping, which is the default setting, and only turning it on when necessary. 
+* **Gradient clipping**: The default setting uses adaptive gradient clipping to prevent gradient explosion, thresholding norm of gradient to the square root of our estimated maximal curvature. There are three cases regarding gradient clipping. We recommend first turning off gradient clipping, which is the default setting, and only turning it on when necessary. 
 
-  * If you want to manually set threshold to clip the gradient, you can consider using the ```clip_thresh=thresh_on_the_gradient_norm``` argument when initializing the YFOptimizer.
+  * If you want to manually set threshold to clip the gradient, please first use ```adapt_clip=False``` to turn off the auto-clipping feature. Then, you can consider either using the ```clip_thresh=thresh_on_the_gradient_norm``` argument when initializing the YFOptimizer to clip acoording to your set threshold inside YFOptimizer, or clipping the gradient outside of YFOptimizer before ```step()``` is called.
   
-  * If you want to totally turn off gradient clipping, please use ```clip_thresh=None, auto_clip_fac=None``` when initializing the YFOptimizer.
+  * If you want to totally turn off gradient clipping in YFOptimizer, please use ```clip_thresh=None, adapt_clip=False``` when initializing the YFOptimizer.
 
-  * If you want to keep the auto clipping feature, you can also play with ```auto_clip_fac=positive_value``` where lower value means stricter clipping and the value 1.1 or 2 work well on a few examples we tried out.
-  
 * **Normalization**: When using log probability style losses, please make sure the loss is properly normalized. In some RNN/LSTM cases, the cross_entropy need to be averaged by the number of samples in a minibatch. Sometimes, it also needs to be averaged over the number of classes and the sequence length of each sample in some PyTorch loss functions. E.g. in nn.MultiLabelSoftMarginLoss, ```size_average=True``` needs to be set.
 
 <!---* **Sparsity**: Gradient norm, curvature estimations etc., when calculated with sparse gradient, are biased to larger values than the counterpart from the dense gradient on the full dataset. The bias can be illustrated using the following example: the norm of vectors (1.0, 0.0), (0.0, 1.0) and the norm of their average (0.5, 0.5). The norm of the latter is sqrt(sparsity (i.e. 0.5 here) ) * the norm of the former. The sparsity debias feature is useful when the model is very sparse, e.g. LSTM with word embedding. For non-sparse models, e.g. CNN, turning this feature off could slightly speedup.--->
@@ -86,6 +84,6 @@ For Tensorflow users, we implemented [YellowFin Tensorflow Repo](https://github.
 
 <!---For MXNet users, Github user [StargazerZhu](https://github.com/StargazerZhu) has already implemented a Theano version here: [YellowFin MXNet Repo](https://github.com/StargazerZhu/YellowFin_MXNet).--->
 
-For Theano users, Github user [botev](https://github.com/botev) has already implemented a Theano version here: [YellowFin Theano Repo](https://gist.github.com/botev/f8b32c00eafee222e47393f7f0747666).
+<!---For Theano users, Github user [botev](https://github.com/botev) has already implemented a Theano version here: [YellowFin Theano Repo](https://gist.github.com/botev/f8b32c00eafee222e47393f7f0747666).--->
 
 We thank the contributors for YellowFin in different deep learning frameworks.
