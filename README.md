@@ -21,6 +21,8 @@ For more usage details, please refer to the inline documentation of ```tuner_uti
 
 **[2017.08.16] Replace numpy root solver with closed form solution using Vieta's substitution for cubic eqaution. It solves the stability issue of the numpy root solver.**
 
+***[2017.10.29] Major fixe for stability. We added eps to protect fractions in our code, as well as an adaptive clipping feature to properly deal with exploding gradient (manual clipping is still supported as described in the detailed instruction below).***
+
 ## Setup instructions for experiments
 Please clone the master branch and follow the instructions to run YellowFin on [ResNext](https://arxiv.org/abs/1611.05431) for CIFAR10 and [tied LSTM](https://arxiv.org/pdf/1611.01462.pdf) on Penn Treebank for language modeling. The models are adapted from [ResNext repo](https://github.com/kuangliu/pytorch-cifar) and [PyTorch example tied LSTM repo](https://github.com/pytorch/examples/tree/master/word_language_model) respectively. Thanks to the researchers for developing the models. **For more experiments on more convolutional and recurrent neural networks, please refer to our [Tensorflow implementation](https://github.com/JianGoForIt/YellowFin) of YellowFin**.
 
@@ -43,11 +45,7 @@ python main.py --emsize 650 --nhid 650 --dropout 0.5 --epochs 40 --tied --opt_me
 For more experiments, please refer to our [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin).
 
 ## Detailed guidelines
-* **Basic use**: YFOptimizer(parameter_list lr=1.0, mu=0.0) sets initial learnig rate and momentum to 1.0 and 0.0 respectively. This is the uniform setting (i.e. without tuning) for all our PyTorch and Tensorflow experiments. Typically, after a few thousand minibatches, the influence of these initial values diminishes. 
-
-  * If the loss explodes after a very small number of iterations, you may want to lower the init lr to prevent the explosion at the beginining. 
-  
-  * We also have users reporting to use regularizer to avoid explosions.
+* **Basic use**: YFOptimizer(parameter_list) uses the uniform setting (i.e. without tuning) for all the PyTorch and Tensorflow experiments in our paper. 
 
 * **Interface for manual finer control**: If you want to more finely control the learning rate (say using a manually set constant learning rate), or you want to use the typical lr-dropping technique after a ceritain number of epochs, please use ```set_lr_factor()``` in the YFOptimizer class. E.g. if you want to use a manually set constant learning rate, you can run ```set_lr_factor(desired_lr / self._lr)``` before ```self.step()``` at each iteration. More details can be found [here](https://github.com/JianGoForIt/YellowFin_Pytorch/blob/master/pytorch-cifar/main.py#L109). 
 
@@ -61,7 +59,7 @@ For more experiments, please refer to our [YellowFin Tensorflow Repo](https://gi
   
 * **Normalization**: When using log probability style losses, please make sure the loss is properly normalized. In some RNN/LSTM cases, the cross_entropy need to be averaged by the number of samples in a minibatch. Sometimes, it also needs to be averaged over the number of classes and the sequence length of each sample in some PyTorch loss functions. E.g. in nn.MultiLabelSoftMarginLoss, ```size_average=True``` needs to be set.
 
-* **Sparsity**: Gradient norm, curvature estimations etc., when calculated with sparse gradient, are biased to larger values than the counterpart from the dense gradient on the full dataset. The bias can be illustrated using the following example: the norm of vectors (1.0, 0.0), (0.0, 1.0) and the norm of their average (0.5, 0.5). The norm of the latter is sqrt(sparsity (i.e. 0.5 here) ) * the norm of the former. The sparsity debias feature is useful when the model is very sparse, e.g. LSTM with word embedding. For non-sparse models, e.g. CNN, turning this feature off could slightly speedup.
+<!---* **Sparsity**: Gradient norm, curvature estimations etc., when calculated with sparse gradient, are biased to larger values than the counterpart from the dense gradient on the full dataset. The bias can be illustrated using the following example: the norm of vectors (1.0, 0.0), (0.0, 1.0) and the norm of their average (0.5, 0.5). The norm of the latter is sqrt(sparsity (i.e. 0.5 here) ) * the norm of the former. The sparsity debias feature is useful when the model is very sparse, e.g. LSTM with word embedding. For non-sparse models, e.g. CNN, turning this feature off could slightly speedup.--->
 
 * **Non-increasing move**: In some rare cases, we have observe increasing value of lr * || grad ||, i.e. the move, may result in unstableness. We implemented an engineering trick to enforce non-increasing value of lr * || grad ||. The default setting turns the feature off, you can turn it on with ```force_non_inc_step_after_iter=the starting iter you want to enforce the non-increasing value ``` **if it is really necessary**. We recommend ```force_non_inc_step_after_iter``` to be at least a few hundreds because some models may need to gradually raise the magnitude of gradient in the beginning (e.g. a model, not properly initialized, may have near zero-gradient and need iterations to get reasonable gradient level).
 
