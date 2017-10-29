@@ -53,7 +53,7 @@ For more experiments, please refer to our [YellowFin Tensorflow Repo](https://gi
 
   * If you want to manually set threshold to clip the gradient, please first use ```adapt_clip=False``` to turn off the auto-clipping feature. Then, you can consider either using the ```clip_thresh=thresh_on_the_gradient_norm``` argument when initializing the YFOptimizer to clip acoording to your set threshold inside YFOptimizer, or clipping the gradient outside of YFOptimizer before ```step()``` is called.
   
-  * If you want to totally turn off gradient clipping in YFOptimizer, please use ```clip_thresh=None, adapt_clip=False``` when initializing the YFOptimizer.
+  <!---* If you want to totally turn off gradient clipping in YFOptimizer, please use ```clip_thresh=None, adapt_clip=False``` when initializing the YFOptimizer.--->
 
 * **Normalization**: When using log probability style losses, please make sure the loss is properly normalized. In some RNN/LSTM cases, the cross_entropy need to be averaged by the number of samples in a minibatch. Sometimes, it also needs to be averaged over the number of classes and the sequence length of each sample in some PyTorch loss functions. E.g. in nn.MultiLabelSoftMarginLoss, ```size_average=True``` needs to be set.
 
