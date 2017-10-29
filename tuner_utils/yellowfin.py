@@ -13,7 +13,7 @@ class YFOptimizer(object):
   def __init__(self, var_list, lr=0.0001, mu=0.0, clip_thresh=None, weight_decay=0.0,
     beta=0.999, curv_win_width=20, zero_debias=True, sparsity_debias=False, delta_mu=0.0, 
     auto_clip_fac=None, force_non_inc_step=False, h_max_log_smooth=True, h_min_log_smooth=True, 
-    checkpoint_interval=1000, verbose=False, stat_protect_fac=100.0, catastrophic_move_thresh=100.0,
+    checkpoint_interval=1000, verbose=False, adapt_clip=True, stat_protect_fac=100.0, catastrophic_move_thresh=100.0,
     use_disk_checkpoint=False, checkpoint_dir='./YF_workspace'):
     '''
     clip thresh is the threshold value on ||lr * gradient||
@@ -84,6 +84,7 @@ class YFOptimizer(object):
       logging.debug('Verbose mode with debugging info logged.')
 
     # clip exploding gradient
+    self._adapt_clip = adapt_clip
     self._exploding_grad_clip_thresh=1e3
     self._exploding_grad_clip_target_value = 1e3
     self._stat_protect_fac = stat_protect_fac
@@ -481,7 +482,7 @@ class YFOptimizer(object):
         group['lr'] = self._lr_t * self._lr_factor
         # a loose clamping to prevent catastrophically large move. If the move
         # is too large, we set lr to 0 and only use the momentum to move
-        if group['lr'] * np.sqrt(self._global_state['grad_norm_squared']) >= self._catastrophic_move_thresh:
+        if self._adapt_clip and (group['lr'] * np.sqrt(self._global_state['grad_norm_squared']) >= self._catastrophic_move_thresh):
           group['lr'] = self._catastrophic_move_thresh / np.sqrt(self._global_state['grad_norm_squared'] + eps)
           if self._verbose:
             logging.warning("clip catastropic move!")
@@ -521,7 +522,7 @@ class YFOptimizer(object):
       torch.nn.utils.clip_grad_norm(self._var_list, self.auto_clip_thresh() )
 
     # loose threshold for preventing exploding gradients from destroying statistics
-    if self._iter > 1:
+    if self._adapt_clip and (self._iter > 1):
       torch.nn.utils.clip_grad_norm(self._var_list, np.sqrt(self._stat_protect_fac * self._h_max) + eps)
 
 
@@ -547,7 +548,7 @@ class YFOptimizer(object):
           np.sqrt(self._exploding_grad_clip_thresh), 
           np.sqrt(self._global_state['grad_norm_squared'] ), 
           self._exploding_grad_clip_target_value)
-      if self._exploding_grad_detected:
+      if self._adapt_clip and self._exploding_grad_detected:
         # print("exploding gradient detected: grad norm detection thresh ", np.sqrt(self._exploding_grad_clip_thresh), 
         #   "grad norm", np.sqrt(self._global_state['grad_norm_squared'] ), 
         #   "grad norm after clip ", self._exploding_grad_clip_target_value)
