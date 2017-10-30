@@ -80,6 +80,9 @@ If you use YellowFin in your paper, please cite the paper:
 }
 ```
 
+## Acknowledgement
+We thank Olexa Bilaniuk, Andrew Drozdov, Paroma Varma, Bryan He, as well as github user @elPistolero @esvhd for the help in contributing to and testing the codebase.
+
 ## Implementation for other platforms
 For Tensorflow users, we implemented [YellowFin Tensorflow Repo](https://github.com/JianGoForIt/YellowFin).
 
