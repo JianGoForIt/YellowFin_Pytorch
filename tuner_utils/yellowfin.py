@@ -99,6 +99,13 @@ class YFOptimizer(object):
         os.makedirs(self._checkpoint_dir)
       self._checkpoint_file = "checkpoint_pid_" + str(os.getpid())
 
+  @classmethod
+  def allsum(kls, x):
+    x = x.squeeze()
+    while x.numel() > 1:
+      x = x.sum(0)
+    print("inside ", x.shape())
+    return x
 
   def state_dict(self):
     # for checkpoint saving
@@ -274,6 +281,9 @@ class YFOptimizer(object):
         state["grad_avg"].mul_(beta).add_(1 - beta, grad)
         self._grad_var += torch.sum(state["grad_avg"] * state["grad_avg"] )
         
+        #self._grad_var += self.allsum(state["grad_avg"] * state["grad_avg"] )
+
+
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
     else:
