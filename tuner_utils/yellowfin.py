@@ -476,10 +476,10 @@ class YFOptimizer(object):
 
   def update_hyper_param(self):
     for group in self._optimizer.param_groups:
-      group['momentum'] = self._mu_t
+      group['momentum'] = 0.0
       #group['momentum'] = max(self._mu, self._mu_t)
       if self._force_non_inc_step == False:
-        group['lr'] = self._lr_t * self._lr_factor
+        group['lr'] = self._lr_t * self._lr_factor / (1 - self._mu_t)
         # a loose clamping to prevent catastrophically large move. If the move
         # is too large, we set lr to 0 and only use the momentum to move
         if self._adapt_clip and (group['lr'] * np.sqrt(self._global_state['grad_norm_squared']) >= self._catastrophic_move_thresh):
