@@ -353,4 +353,5 @@ for epoch in range(start_epoch, start_epoch+200):
         np.savetxt(f, np.array(test_acc_list) )
 
 
-
+    with open(args.logdir + "/loss.txt", "wb") as f:
+        np.savetxt(f, np.array(train_loss_list) )
