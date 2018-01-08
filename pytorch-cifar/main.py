@@ -31,6 +31,7 @@ parser.add_argument('--logdir', type=str, default="./")
 parser.add_argument('--opt_method', type=str, default="YF")
 parser.add_argument('--lr_thresh', type=float, default=1.0)
 parser.add_argument('--seed', type=int, default=1)
+parser.add_argument('--lr_fac', type=float, default=1.0)
 args = parser.parse_args()
 
 import logging
@@ -102,8 +103,9 @@ elif args.opt_method == "Adam":
     print("using Adam")
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 elif args.opt_method == "YF":
-    print("using YF")
+    print("using YF lr_fac ", args.lr_fac)
     optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4)
+    optimizer.set_lr_factor(args.lr_fac)
 else:
     raise Exception("Optimizer not supported")
 # Training
@@ -164,6 +166,7 @@ def train(epoch, opt,
         else:
             for group in optimizer.param_groups:
                     group['lr'] /= 10.0
+    print("checkout lr factor ", optimizer.get_lr_factor() )
 
     for batch_idx, (inputs, targets) in enumerate(trainloader):
         if use_cuda:
