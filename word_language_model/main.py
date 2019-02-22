@@ -282,6 +282,9 @@ try:
     elif args.opt_method == "Adam":
         print("using Adam")
         optimizer = torch.optim.Adam(model.parameters(), lr)
+    elif args.opt_method == "AMSG":
+        print("using AMSG")
+        optimizer = torch.optim.Adam(model.parameters(), lr, amsgrad=True)
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
         #train_loss = train()
