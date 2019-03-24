@@ -62,17 +62,17 @@ for t in range(4000):
     
 
 ####### MEDDLING AND MONITORING
-    if loss.data[0]<min_loss_so_far:
-        min_loss_so_far=loss.data[0]
+    if loss.data.item()<min_loss_so_far:
+        min_loss_so_far=loss.data.item()
         
     #
-    if loss.data[0]>5*min_loss_so_far or loss.data[0] != loss.data[0]:
+    if loss.data.item()>5*min_loss_so_far or loss.data.item() != loss.data.item():
         # THIS IS THE CHECK FOR BOUNCING BACK and nan loss
         # We might want to throw an exception here (if that's how TravisCI works)
         raise Exception("loss dramatically bounces back after gradient spike")
         
     if t<10 or t>3500:
-        print("loss at step ", t, loss.data[0])
+        print("loss at step ", t, loss.data.item())
 
         # Extreme gradient values in here
         if t % 2 == 0:

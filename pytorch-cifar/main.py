@@ -36,7 +36,13 @@ args = parser.parse_args()
 import logging
 if not os.path.isdir(args.logdir):
     os.makedirs(args.logdir)
-#logging.basicConfig(filename=args.logdir + "/num.log",level=logging.DEBUG)
+logging.basicConfig(
+        level=logging.DEBUG,
+        handlers=[
+            logging.FileHandler(args.logdir + "/num.log", mode='w'),
+            logging.StreamHandler(),
+        ],
+    )
 
 use_cuda = torch.cuda.is_available()
 best_acc = 0  # best test accuracy
@@ -49,7 +55,7 @@ if torch.cuda.is_available():
     torch.cuda.manual_seed_all(args.seed)
 
 # Data
-print('==> Preparing data..')
+logging.info('==> Preparing data..')
 transform_train = transforms.Compose([
     transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
@@ -74,14 +80,14 @@ classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship'
 # if args.resume:
 if 0:
     # Load checkpoint.
-    print('==> Resuming from checkpoint..')
+    logging.info('==> Resuming from checkpoint..')
     assert os.path.isdir('checkpoint'), 'Error: no checkpoint directory found!'
     checkpoint = torch.load('./checkpoint/ckpt.t7')
     net = checkpoint['net']
     best_acc = checkpoint['acc']
     start_epoch = checkpoint['epoch']
 else:
-    print('==> Building model..')
+    logging.info('==> Building model..')
     # net = VGG('VGG19')
     # net = ResNet18()
     # net = GoogLeNet()
@@ -96,13 +102,13 @@ if use_cuda:
 
 criterion = nn.CrossEntropyLoss()
 if args.opt_method == "SGD":
-    print("using SGD")
+    logging.info("using SGD")
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=0.9, weight_decay=5e-4)
 elif args.opt_method == "Adam":
-    print("using Adam")
+    logging.info("using Adam")
     optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 elif args.opt_method == "YF":
-    print("using YF")
+    logging.info("using YF")
     optimizer = YFOptimizer(net.parameters(), lr=args.lr, mu=args.mu, weight_decay=5e-4)
 else:
     raise Exception("Optimizer not supported")
@@ -125,7 +131,7 @@ def train(epoch, opt,
     move_lr_g_norm_squared_list,\
     lr_grad_norm_clamp_act_list,\
     fast_view_act_list):
-    print('\nEpoch: %d' % epoch)
+    logging.info('\nEpoch: %d' % epoch)
     net.train()
     train_loss = 0
     correct = 0
@@ -176,7 +182,7 @@ def train(epoch, opt,
         optimizer.step()
 
 
-        loss_list.append(loss.data[0])
+        loss_list.append(loss.data.item())
         local_curv_list.append(opt._global_state['grad_norm_squared'] )
         max_curv_list.append(opt._h_max)
         min_curv_list.append(opt._h_min)
@@ -186,22 +192,22 @@ def train(epoch, opt,
         dist_list.append(opt._dist_to_opt)
         grad_var_list.append(opt._grad_var)
 
-        lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'].cpu() ) )
         lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
-        move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+        move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'].cpu() ) )
         move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
 
         lr_t_list.append(opt._lr_t)
         mu_t_list.append(opt._mu_t)
 
-        loss_list.append(loss.data[0] )
-        train_loss += loss.data[0]
+        loss_list.append(loss.data.item() )
+        train_loss += loss.data.item()
         _, predicted = torch.max(outputs.data, 1)
         total += targets.size(0)
         correct += predicted.eq(targets.data).cpu().sum()
 
         progress_bar(batch_idx, len(trainloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-            % (train_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            % (train_loss/(batch_idx+1), 100.*float(correct)/float(total), correct, total))
 
         #if args.opt_method == "YF":
         #    lr_list.append(optimizer._optimizer.param_groups[0]['lr'] )
@@ -243,19 +249,19 @@ def test(epoch):
         outputs = net(inputs)
         loss = criterion(outputs, targets)
 
-        test_loss += loss.data[0]
+        test_loss += loss.data.item()
         _, predicted = torch.max(outputs.data, 1)
         total += targets.size(0)
         correct += predicted.eq(targets.data).cpu().sum()
 
         progress_bar(batch_idx, len(testloader), 'Loss: %.3f | Acc: %.3f%% (%d/%d)'
-            % (test_loss/(batch_idx+1), 100.*correct/total, correct, total))
+            % (test_loss/(batch_idx+1), 100.0*float(correct)/float(total), correct, total))
 
 
     # Save checkpoint.
-    acc = 100.*correct/total
+    acc = 100.*float(correct)/float(total)
     if acc > best_acc:
-        print('Saving..')
+        logging.info('Saving..')
         state = {
             'net': net.module if use_cuda else net,
             'acc': acc,
@@ -265,6 +271,7 @@ def test(epoch):
         #     os.mkdir('checkpoint')
         # torch.save(state, './checkpoint/ckpt.t7')
         best_acc = acc
+    logging.info("Test acc: " + str(acc))
     return acc
 
 

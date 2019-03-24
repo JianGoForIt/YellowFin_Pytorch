@@ -272,7 +272,7 @@ class YFOptimizer(object):
           state["grad_avg"] = grad.new().resize_as_(grad).zero_()
           state["grad_avg_squared"] = 0.0
         state["grad_avg"].mul_(beta).add_(1 - beta, grad)
-        self._grad_var += torch.sum(state["grad_avg"] * state["grad_avg"] )
+        self._grad_var += torch.sum(state["grad_avg"] * state["grad_avg"] ).item()
         
     if self._zero_debias:
       debias_factor = self.zero_debias_factor()
@@ -280,7 +280,7 @@ class YFOptimizer(object):
       debias_factor = 1.0
 
     self._grad_var /= -(debias_factor**2)
-    self._grad_var += global_state['grad_norm_squared_avg'] / debias_factor
+    self._grad_var += global_state['grad_norm_squared_avg'].item() / debias_factor
     # in case of negative variance: the two term are using different debias factors
     self._grad_var = max(self._grad_var, eps)
     if self._sparsity_debias:
@@ -352,7 +352,7 @@ class YFOptimizer(object):
         0.0 * beta + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] ) + eps)
       # we monitor the minimal smoothed ||lr * grad||
       global_state["lr_grad_norm_avg_min"] = \
-        np.exp(global_state["lr_grad_norm_avg"] / self.zero_debias_factor() )
+        np.exp(global_state["lr_grad_norm_avg"].cpu() / self.zero_debias_factor() )
     else:
       global_state["lr_grad_norm_avg"] = global_state["lr_grad_norm_avg"] * beta \
         + (1 - beta) * np.log(self._lr * np.sqrt(global_state['grad_norm_squared'] ) + eps)
@@ -385,7 +385,7 @@ class YFOptimizer(object):
     if self._iter >= 1:
       self._exploding_grad_clip_thresh = self._h_max
       self._exploding_grad_clip_target_value = np.sqrt(self._h_max)    
-      if global_state['grad_norm_squared'] >= self._exploding_grad_clip_thresh:
+      if global_state['grad_norm_squared'].cpu() >= self._exploding_grad_clip_thresh:
         self._exploding_grad_detected = True
       else:
         self._exploding_grad_detected = False
@@ -444,8 +444,8 @@ class YFOptimizer(object):
     # There is only one real solution y (which is in [0, 1] ).
     # http://mathworld.wolfram.com/VietasSubstitution.html
     # eps in the numerator is to prevent momentum = 1 in case of zero gradient
-    if np.isnan(self._dist_to_opt) or np.isnan(self._h_min) or np.isnan(self._grad_var) \
-      or np.isinf(self._dist_to_opt) or np.isinf(self._h_min) or np.isinf(self._grad_var):
+    if np.isnan(self._dist_to_opt.cpu()) or np.isnan(self._h_min.cpu()) or np.isnan(self._grad_var) \
+      or np.isinf(self._dist_to_opt.cpu()) or np.isinf(self._h_min.cpu()) or np.isinf(self._grad_var):
       logging.warning("Input to cubic solver has invalid nan/inf value!")
       raise Exception("Input to cubic solver has invalid nan/inf value!")
 
@@ -460,11 +460,11 @@ class YFOptimizer(object):
       logging.debug("w3 %f ", w3)
       logging.debug("y %f, denominator %f", y, w + eps)
 
-    if np.isnan(x) or np.isinf(x):
+    if np.isnan(x.cpu()) or np.isinf(x.cpu()):
       logging.warning("Output from cubic is invalid nan/inf value!")
       raise Exception("Output from cubic is invalid nan/inf value!")
 
-    return x
+    return x.item()
 
 
   def get_mu(self):
@@ -482,7 +482,7 @@ class YFOptimizer(object):
         group['lr'] = self._lr_t * self._lr_factor
         # a loose clamping to prevent catastrophically large move. If the move
         # is too large, we set lr to 0 and only use the momentum to move
-        if self._adapt_clip and (group['lr'] * np.sqrt(self._global_state['grad_norm_squared']) >= self._catastrophic_move_thresh):
+        if self._adapt_clip and (group['lr'] * np.sqrt(self._global_state['grad_norm_squared'].cpu()) >= self._catastrophic_move_thresh):
           group['lr'] = self._catastrophic_move_thresh / np.sqrt(self._global_state['grad_norm_squared'] + eps)
           if self._verbose:
             logging.warning("clip catastropic move!")

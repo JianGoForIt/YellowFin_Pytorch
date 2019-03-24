@@ -60,10 +60,10 @@ for t in range(6600):
 
     
 ####### MEDDLING AND MONITORING
-    if loss.data[0]<min_loss_so_far:
-        min_loss_so_far=loss.data[0]     
+    if loss.data.item()<min_loss_so_far:
+        min_loss_so_far=loss.data.item()     
     
-    if loss.data[0]>5*min_loss_so_far:
+    if loss.data.item()>5*min_loss_so_far:
         # JIAN: THIS IS THE CHECK FOR BOUNCING BACK
         # We might want to throw an exception here (if that's how TravisCI works)
         raise Exception("loss dramatically bounces back after gradient spike")
@@ -71,9 +71,9 @@ for t in range(6600):
         
     if t>10 and t<6500:
         if t==11:
-            print 'Zero gradients start'
+            print('Zero gradients start')
         if t==6499:
-            print 'Zero gradients stop'
+            print('Zero gradients stop')
         target_norm = Variable(0.0*torch.ones(1))
     
         grad_norm = torch_list_grad_norm(optimizer._optimizer.param_groups[0]['params'])
@@ -84,12 +84,12 @@ for t in range(6600):
         # You can enable this to see some slow reaction from our estimators
         # when the zero gradients start 
         if True and (t>6490 or t<20):
-            print(t, loss.data[0])
+            print(t, loss.data.item())
             print('Curvatures', optimizer._h_max, optimizer._h_min)
             print('mu_t, lr_t', optimizer._mu_t, optimizer._lr_t)
             print
     else:
-        print(t, loss.data[0])
+        print(t, loss.data.item())
    
     # Calling the step function on an Optimizer makes an update to its parameters
     optimizer.step()

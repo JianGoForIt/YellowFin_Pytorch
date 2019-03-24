@@ -346,9 +346,9 @@ def train_early_stopping(mini_batch_size, X_train, X_train_feature, y_train, X_t
         dist_list.append(optimizer._dist_to_opt)
         grad_var_list.append(optimizer._grad_var)
 
-        lr_g_norm_list.append(optimizer._lr * np.sqrt(optimizer._global_state['grad_norm_squared'] ) )
+        lr_g_norm_list.append(optimizer._lr * np.sqrt(optimizer._global_state['grad_norm_squared'].cpu() ) )
         lr_g_norm_squared_list.append(optimizer._lr * optimizer._global_state['grad_norm_squared'] )
-        move_lr_g_norm_list.append(optimizer._optimizer.param_groups[0]["lr"] * np.sqrt(optimizer._global_state['grad_norm_squared'] ) )
+        move_lr_g_norm_list.append(optimizer._optimizer.param_groups[0]["lr"] * np.sqrt(optimizer._global_state['grad_norm_squared'].cpu() ) )
         move_lr_g_norm_squared_list.append(optimizer._optimizer.param_groups[0]["lr"] * optimizer._global_state['grad_norm_squared'] )
 
 

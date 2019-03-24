@@ -182,7 +182,7 @@ def train_data(iter_id, mini_batch, feature_batch, targets, word_attn_model, mix
     loss.backward()
 
     # assert for nan loss
-    assert loss.data[0] == loss.data[0]
+    assert loss.data.item() == loss.data.item()
     
     # set gradient to nan
     if iter_id % 10 == 5:
@@ -227,7 +227,7 @@ def train_data(iter_id, mini_batch, feature_batch, targets, word_attn_model, mix
 #     mix_optimizer.step()
     grad_norm = torch.nn.utils.clip_grad_norm(optimizer._var_list, 1.0 * 1e20)
     
-    return loss.data[0], grad_norm
+    return loss.data.item(), grad_norm
 
 def get_predictions(mini_batch, feature_batch, word_attn_model, mix_softmax):
     state_word = word_attn_model.init_hidden()

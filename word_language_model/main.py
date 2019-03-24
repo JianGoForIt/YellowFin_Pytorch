@@ -58,13 +58,19 @@ args = parser.parse_args()
 
 if not os.path.isdir(args.logdir):
     os.makedirs(args.logdir)
-logging.basicConfig(filename=args.logdir + "/num.log", level=logging.DEBUG)
+logging.basicConfig(
+        level=logging.DEBUG,
+        handlers=[
+            logging.FileHandler(args.logdir + "/num.log", mode='w'),
+            logging.StreamHandler(),
+        ],
+    )
 
 # Set the random seed manually for reproducibility.
 torch.manual_seed(args.seed)
 if torch.cuda.is_available():
     if not args.cuda:
-        print("WARNING: You have a CUDA device, so you should probably run with --cuda")
+        logging.info("WARNING: You have a CUDA device, so you should probably run with --cuda")
     else:
         torch.cuda.manual_seed(args.seed)
 
@@ -107,8 +113,8 @@ criterion = nn.CrossEntropyLoss()
 
 def repackage_hidden(h):
     """Wraps hidden states in new Variables, to detach them from their history."""
-    if type(h) == Variable:
-        return Variable(h.data)
+    if isinstance(h, torch.Tensor):
+        return h.detach()
     else:
         return tuple(repackage_hidden(v) for v in h)
 
@@ -132,7 +138,7 @@ def evaluate(data_source):
         output_flat = output.view(-1, ntokens)
         total_loss += len(data) * criterion(output_flat, targets).data
         hidden = repackage_hidden(hidden)
-    return total_loss[0] / len(data_source)
+    return total_loss.item() / float(len(data_source))
 
 
 def train(opt, loss_list,\
@@ -180,7 +186,7 @@ def train(opt, loss_list,\
         #     print group['lr'], group['momentum']
 
 
-        loss_list.append(loss.data[0])
+        loss_list.append(loss.data.item())
         if args.opt_method == 'YF':        
             local_curv_list.append(opt._global_state['grad_norm_squared'] )
             max_curv_list.append(opt._h_max)
@@ -191,9 +197,9 @@ def train(opt, loss_list,\
             dist_list.append(opt._dist_to_opt)
             grad_var_list.append(opt._grad_var)
 
-            lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+            lr_g_norm_list.append(opt._lr * np.sqrt(opt._global_state['grad_norm_squared'].cpu() ) )
             lr_g_norm_squared_list.append(opt._lr * opt._global_state['grad_norm_squared'] )
-            move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'] ) )
+            move_lr_g_norm_list.append(opt._optimizer.param_groups[0]["lr"] * np.sqrt(opt._global_state['grad_norm_squared'].cpu() ) )
             move_lr_g_norm_squared_list.append(opt._optimizer.param_groups[0]["lr"] * opt._global_state['grad_norm_squared'] )
 
             lr_t_list.append(opt._lr_t)
@@ -201,12 +207,12 @@ def train(opt, loss_list,\
 
 
         total_loss += loss.data
-        train_loss_list.append(loss.data[0] )
+        train_loss_list.append(loss.data.item() )
 
         if batch % args.log_interval == 0 and batch > 0:
-            cur_loss = total_loss[0] / args.log_interval
+            cur_loss = total_loss.item() / args.log_interval
             elapsed = time.time() - start_time
-            print('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
+            logging.info('| epoch {:3d} | {:5d}/{:5d} batches | lr {:02.2f} | ms/batch {:5.2f} | '
                     'loss {:5.2f} | ppl {:8.2f}'.format(
                 epoch, batch, len(train_data) // args.bptt, lr,
                 elapsed * 1000 / args.log_interval, cur_loss, math.exp(cur_loss)))
@@ -268,22 +274,22 @@ try:
     fast_view_act_list = []
 
     if args.opt_method == "SGD":
-        print("using SGD")
+        logging.info("using SGD")
         optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.0)
     elif args.opt_method == "momSGD":
-        print("using mom SGD")
+        logging.info("using mom SGD")
         optimizer = torch.optim.SGD(model.parameters(), lr, momentum=0.9)
     elif args.opt_method == "YF":
-        print("using YF")
+        logging.info("using YF")
         optimizer = YFOptimizer(model.parameters() )
     elif args.opt_method == "Adagrad":
-        print("using Adagrad")
+        logging.info("using Adagrad")
         optimizer = torch.optim.Adagrad(model.parameters(), lr)
     elif args.opt_method == "Adam":
-        print("using Adam")
+        logging.info("using Adam")
         optimizer = torch.optim.Adam(model.parameters(), lr)
     elif args.opt_method == "AMSG":
-        print("using AMSG")
+        logging.info("using AMSG")
         optimizer = torch.optim.Adam(model.parameters(), lr, amsgrad=True)
     for epoch in range(1, args.epochs+1):
         epoch_start_time = time.time()
@@ -328,12 +334,12 @@ try:
         train_loss_list += train_loss
         val_loss = evaluate(val_data)
         val_loss_list.append(val_loss)
-        print('-' * 89)
-        print('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
+        logging.info('-' * 89)
+        logging.info('| end of epoch {:3d} | time: {:5.2f}s | valid loss {:5.2f} | '
               'valid ppl {:8.2f}'.format(epoch,
                                          (time.time() - epoch_start_time),
                                          val_loss, math.exp(val_loss)))
-        print('-' * 89)
+        logging.info('-' * 89)
         # Save the model if the validation loss is the best we've seen so far.
         if not best_val_loss or val_loss < best_val_loss:
             with open(args.logdir + "/" + args.save, 'wb') as f:
@@ -359,8 +365,8 @@ try:
 
 
 except KeyboardInterrupt:
-    print('-' * 89)
-    print('Exiting from training early')
+    logging.info('-' * 89)
+    logging.info('Exiting from training early')
 
 # Load the best saved model.
 # with open(args.save, 'rb') as f:
@@ -368,7 +374,7 @@ except KeyboardInterrupt:
 
 # Run on test data.
 test_loss = evaluate(test_data)
-print('=' * 89)
-print('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
+logging.info('=' * 89)
+logging.info('| End of training | test loss {:5.2f} | test ppl {:8.2f}'.format(
     test_loss, math.exp(test_loss)))
-print('=' * 89)
+logging.info('=' * 89)
